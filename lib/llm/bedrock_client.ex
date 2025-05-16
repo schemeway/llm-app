@@ -1,7 +1,8 @@
-defmodule LlmChat.BedrockClient do
+defmodule Llm.BedrockClient do
   require Logger
 
-  alias Llm.{Message, Context, Bedrock}
+  alias Llm.{Message, Context}
+  alias Tools.Tool
 
   @model_id_nova_pro "amazon.nova-pro-v1:0"
   @model_id_claude "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
@@ -15,8 +16,6 @@ defmodule LlmChat.BedrockClient do
   When you don't need any information to further process the user's request, just answer by writing
   Final answer: <answer>
   """
-
-  # --- Configuration AWS (Exemple simple - À ADAPTER !) ---
 
   defp notify_consumption(caller_pid, response) do
     case response do
@@ -33,7 +32,7 @@ defmodule LlmChat.BedrockClient do
     send(caller_pid, {:bedrock_response, %{role: :assistant, content: message}})
   end
 
-  defp create_context(caller_pid, messages) do
+  defp create_context(caller_pid) do
     Context.new(@model_id_claude, @system_prompt,
       caller_pid: caller_pid,
       tools: Tools.ToolRegistry.get_all_tools(),
@@ -42,7 +41,7 @@ defmodule LlmChat.BedrockClient do
   end
 
   def invoke(caller_pid, messages) do
-    create_context(caller_pid, messages)
+    create_context(caller_pid)
     |> add_messages(messages)
     |> send_request()
   end
@@ -59,7 +58,7 @@ defmodule LlmChat.BedrockClient do
     context |> Context.add_message(Message.assistant(message)) |> add_messages(messages)
   end
 
-  def send_request(context) do
+  defp send_request(context) do
     Logger.debug(context.messages)
 
     {:ok, response} = invoke_bedrock(context)
@@ -70,7 +69,7 @@ defmodule LlmChat.BedrockClient do
   end
 
   defp invoke_bedrock(context) do
-    Bedrock.converse(context.model_id, context.messages, context.system_prompt, context.tools)
+    converse(context.model_id, context.messages, context.system_prompt, context.tools)
     |> ExAws.request(service_override: :bedrock)
   end
 
@@ -101,18 +100,16 @@ defmodule LlmChat.BedrockClient do
     end
   end
 
-  def process_tool_use([], context, tool_results) do
+  defp process_tool_use([], context, tool_results) do
     context
     |> Context.add_message(Message.tool_results(tool_results))
     |> send_request()
   end
-
-  def process_tool_use([%{"text" => text} | rest], context, tool_results) do
+  defp process_tool_use([%{"text" => text} | rest], context, tool_results) do
     notify_thoughts(context.caller_pid, %{text: text})
     process_tool_use(rest, context, tool_results)
   end
-
-  def process_tool_use([%{"toolUse" => %{}} = tool_use | rest], context, tool_results) do
+  defp process_tool_use([%{"toolUse" => %{}} = tool_use | rest], context, tool_results) do
     result = run_tool(context, tool_use)
 
     notify_thoughts(context.caller_pid, %{
@@ -124,12 +121,43 @@ defmodule LlmChat.BedrockClient do
     process_tool_use(rest, context, tool_results ++ [result])
   end
 
-  def run_tool(context, %{
+  defp run_tool(context, %{
         "toolUse" => %{"name" => tool_name, "toolUseId" => tool_use_id, "input" => input}
       }) do
     tool = Enum.find(context.tools, fn tool -> tool.name() == tool_name end)
 
     tool.call(input)
     |> Message.tool_use(tool_use_id)
+  end
+
+
+  defp converse(model_id, messages, system_prompt, tools) do
+    data =  %{
+        # inferenceConfig: %{
+        #   temperature: 1,
+        #   topP: 1,
+        # },
+        # additionalModelRequestFields: %{
+        #   inferenceConfig: %{
+        #     topK: 1
+        #   }
+        # },
+        max_tokens: 5_000,
+        thinking: %{
+          type: "enabled",
+          budget_tokens: 2_000
+        },
+        messages: messages,
+      }
+      |> Map.merge(if system_prompt, do: %{system: [%{text: system_prompt}]}, else: %{})
+      |> Map.merge(if tools, do: %{toolConfig: %{tools: tools |> Enum.map(&Tool.build_tool_spec/1)}}, else: %{})
+
+    %ExAws.Operation.JSON{
+      http_method: :post,
+      headers: [{"Content-Type", "application/json"}],
+      data: data,
+      path: "/model/#{model_id}/converse",
+      service: :"bedrock-runtime",
+    }
   end
 end

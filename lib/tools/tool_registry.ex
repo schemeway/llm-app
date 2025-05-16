@@ -15,6 +15,10 @@ defmodule Tools.ToolRegistry do
     Agent.start_link(fn -> default_tools end, name: __MODULE__)
   end
 
+  def init((init_arg)) do
+    {:ok, init_arg}
+  end
+
   def get_all_tools do
     Agent.get(__MODULE__, fn tools -> tools end)
   end

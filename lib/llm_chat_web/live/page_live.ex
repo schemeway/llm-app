@@ -2,7 +2,7 @@ defmodule LlmChatWeb.PageLive do
   use LlmChatWeb, :live_view
   require Logger
 
-  alias LlmChat.Bedrock # Module à créer pour l'interaction Bedrock
+  alias Llm.Bedrock # Module à créer pour l'interaction Bedrock
 
   @impl true
   def mount(_params, _session, socket) do
@@ -123,20 +123,13 @@ defmodule LlmChatWeb.PageLive do
           is_loading: true
         )
 
-      # Lancer l'appel à Bedrock de manière asynchrone
-      # Note: Le format de `new_messages` doit correspondre à ce que Bedrock attend.
-      # Claude Messages API utilise: `messages: [%{role: "user", content: "..."}, ...]`
       bedrock_messages = Enum.map(new_messages, fn msg -> %{role: Atom.to_string(msg.role), content: msg.content} end)
 
-      # Envoyer une tâche asynchrone pour ne pas bloquer le LiveView
-      # Le `self()` est passé pour que le client Bedrock puisse renvoyer la réponse.
       Bedrock.invoke(self(), bedrock_messages)
 
       {:noreply, socket}
     end
   end
-
-  # --- Gestionnaires d'informations (Réponses Asynchrones) ---
 
   @impl true
   def handle_info({:bedrock_response, response_data}, socket) do
@@ -173,21 +166,15 @@ defmodule LlmChatWeb.PageLive do
     {:noreply, socket}
   end
 
-  # Gérer les cas où l'appel d'outil est la seule réponse (pas de contenu textuel final)
   @impl true
   def handle_info({:bedrock_tool_use_only, response_data}, socket) do
-     # L'API Claude 3 peut retourner *uniquement* des appels d'outils.
-     # Ici, nous affichons juste les pensées. Une application complète
-     # exécuterait l'outil et renverrait le résultat à Claude.
      thoughts = socket.assigns.thoughts ++ response_data.thoughts
 
      socket =
        assign(socket,
          thoughts: thoughts,
-         is_loading: false # Ou rester en chargement si on exécute l'outil ? À décider.
+         is_loading: false
        )
-     # Pour ce cas précis, nous ne faisons rien d'autre, mais une vraie app lancerait l'outil.
-     # Vous pourriez ajouter un message comme "Claude veut utiliser un outil..."
      {:noreply, socket}
   end
 

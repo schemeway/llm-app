@@ -5,13 +5,11 @@ defmodule Llm.ModelRegistry do
 
   use GenServer
 
-  alias LlmChat.BedrockClient
-  alias LlmChat.Bedrock
-
   def start_link(_) do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
+  @impl true
   def init(:ok) do
     # Initialize the model registry here if needed
     {:ok, %{models: []}}

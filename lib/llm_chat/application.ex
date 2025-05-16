@@ -6,13 +6,14 @@ defmodule LlmChat.Application do
   use Application
 
   @impl true
+  @spec start(any(), any()) :: {:error, any()} | {:ok, pid()}
   def start(_type, _args) do
 
     children = [
       LlmChatWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:llm_chat, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: LlmChat.PubSub},
-      LlmChat.Bedrock,
+      Llm.Bedrock,
       Llm.ModelRegistry,
       Tools.ToolRegistry,
       # Start the Finch HTTP client for sending emails

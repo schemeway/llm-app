@@ -1,44 +1,38 @@
 defmodule Llm.Bedrock do
-  alias Tools.Tool
+  alias Llm.BedrockClient
+  use GenServer
 
-  @model_id "amazon.nova-pro-01:0"
-  def list_models(model \\ "eu.anthropic.claude-3-7-sonnet-20250219-v1:0") do
-    # ExAws.Bedrock.list_foundation_models(by_provider: "anthropic")
-    ExAws.Bedrock.get_foundation_model(model)
-    |> IO.inspect()
-    |> ExAws.request(service_override: :bedrock)
+  require Logger
+
+  def start_link(_) do
+    GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
+  end
+
+  def invoke(callerid, messages) do
+    GenServer.cast(__MODULE__, {:invoke, callerid, messages})
+  end
+
+  @impl true
+  def init(:ok) do
+    # Initialize the Bedrock client here if needed
+    {:ok, %{}}
+  end
+
+  @impl true
+  def handle_cast({:invoke, callerid, messages}, state) do
+    spawn_link(fn ->
+      BedrockClient.invoke(callerid, messages)  # Log the invocation
+    end)
+
+    {:noreply, state}
   end
 
 
-  def converse(model_id, messages, system_prompt \\ nil, tools \\ nil) do
-    data =  %{
-        # inferenceConfig: %{
-        #   temperature: 1,
-        #   topP: 1,
-        # },
-        # additionalModelRequestFields: %{
-        #   inferenceConfig: %{
-        #     topK: 1
-        #   }
-        # },
-        max_tokens: 5_000,
-        thinking: %{
-          type: "enabled",
-          budget_tokens: 2_000
-        },
-        messages: messages,
-      }
-      |> Map.merge(if system_prompt, do: %{system: [%{text: system_prompt}]}, else: %{})
-      |> Map.merge(if tools, do: %{toolConfig: %{tools: tools |> Enum.map(&Tool.build_tool_spec/1)}}, else: %{})
-
-    %ExAws.Operation.JSON{
-      http_method: :post,
-      headers: [{"Content-Type", "application/json"}],
-      data: data,
-      path: "/model/#{model_id}/converse",
-      service: :"bedrock-runtime",
-    }
+  @impl true
+  def handle_info(msg, socket) do
+    Logger.debug("Message non traité reçu: #{inspect(msg)}")
+     # Gérer les messages non traités
+    {:noreply, socket}
   end
-
 
 end
