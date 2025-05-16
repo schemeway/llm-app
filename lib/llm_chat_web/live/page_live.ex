@@ -4,12 +4,6 @@ defmodule LlmChatWeb.PageLive do
 
   alias Llm.Bedrock # Module à créer pour l'interaction Bedrock
 
-
-  @model_id_nova_pro "amazon.nova-pro-v1:0"
-  @model_id_claude "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
-  @model_id_claude_3 "anthropic.claude-3-haiku-20240307-v1:0"
-  @model_id_deepseek "us.deepseek.r1-v1:0"
-
   @system_prompt """
     You are an intelligent assistant. To answer the user's question, you can use the tools provided. Think step by step and
     verify your answer with the tools.
@@ -20,10 +14,14 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    default_model = Llm.ModelRegistry.list_models() |> List.first()
+
     socket =
       assign(socket,
         messages: [],           # Liste des messages: [%{role: :user | :assistant, content: "..."}]
         thoughts: [],           # Liste des pensées: [%{tool_use_id: "...", name: "...", input: %{...}, text: "..."}]
+        system_prompt: @system_prompt,
+        model_id: default_model,
         current_input: "",
         total_tokens: 0,
         input_tokens: 0,
@@ -139,7 +137,7 @@ defmodule LlmChatWeb.PageLive do
 
       bedrock_messages = Enum.map(new_messages, fn msg -> %{role: Atom.to_string(msg.role), content: msg.content} end)
 
-      Bedrock.invoke(self(), @model_id_claude, @system_prompt, bedrock_messages)
+      Bedrock.invoke(self(), socket.assigns.model_id, socket.assigns.system_prompt, bedrock_messages)
 
       {:noreply, socket}
     end

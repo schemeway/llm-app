@@ -11,8 +11,14 @@ defmodule Llm.ModelRegistry do
 
   @impl true
   def init(:ok) do
-    # Initialize the model registry here if needed
-    {:ok, %{models: []}}
+    models =   [
+      "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+      "amazon.nova-pro-v1:0",
+      "anthropic.claude-3-haiku-20240307-v1:0",
+      "us.deepseek.r1-v1:0",
+    ]
+
+    {:ok, %{models: models}}
   end
 
   def register_model(model_id) do
