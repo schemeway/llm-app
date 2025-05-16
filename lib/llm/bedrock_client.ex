@@ -4,19 +4,6 @@ defmodule Llm.BedrockClient do
   alias Llm.{Message, Context}
   alias Tools.Tool
 
-  @model_id_nova_pro "amazon.nova-pro-v1:0"
-  @model_id_claude "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
-  @model_id_claude_3 "anthropic.claude-3-haiku-20240307-v1:0"
-  @model_id_deepseek "us.deepseek.r1-v1:0"
-
-  @system_prompt """
-    You are an intelligent assistant. To answer the user's question, you can use the tools provided. Think step by step and
-    verify your answer with the tools.
-
-  When you don't need any information to further process the user's request, just answer by writing
-  Final answer: <answer>
-  """
-
   defp notify_consumption(caller_pid, response) do
     case response do
       %{"usage" => %{"inputTokens" => input_tokes, "outputTokens" => output_tokens}} ->
@@ -32,18 +19,18 @@ defmodule Llm.BedrockClient do
     send(caller_pid, {:bedrock_response, %{role: :assistant, content: message}})
   end
 
-  defp create_context(caller_pid) do
-    Context.new(@model_id_claude, @system_prompt,
+  def invoke(caller_pid, model, system_prompt, messages) do
+    create_context(caller_pid, model, system_prompt)
+    |> add_messages(messages)
+    |> send_request()
+  end
+
+  defp create_context(caller_pid, model, system_prompt) do
+    Context.new(model, system_prompt,
       caller_pid: caller_pid,
       tools: Tools.ToolRegistry.get_all_tools(),
       process_tools?: true
     )
-  end
-
-  def invoke(caller_pid, messages) do
-    create_context(caller_pid)
-    |> add_messages(messages)
-    |> send_request()
   end
 
   defp add_messages(context, []), do: context

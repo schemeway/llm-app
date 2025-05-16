@@ -8,8 +8,8 @@ defmodule Llm.Bedrock do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
-  def invoke(callerid, messages) do
-    GenServer.cast(__MODULE__, {:invoke, callerid, messages})
+  def invoke(callerid, model, system_prompt, messages) do
+    GenServer.cast(__MODULE__, {:invoke, callerid, model, system_prompt, messages})
   end
 
   @impl true
@@ -19,9 +19,9 @@ defmodule Llm.Bedrock do
   end
 
   @impl true
-  def handle_cast({:invoke, callerid, messages}, state) do
+  def handle_cast({:invoke, callerid, model, system_prompt, messages}, state) do
     spawn_link(fn ->
-      BedrockClient.invoke(callerid, messages)  # Log the invocation
+      BedrockClient.invoke(callerid, model, system_prompt, messages)  # Log the invocation
     end)
 
     {:noreply, state}
