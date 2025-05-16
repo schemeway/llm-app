@@ -35,9 +35,9 @@ defmodule LlmChatWeb.PageLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="flex h-screen font-sans">
+    <div class="flex w-100 h-screen font-sans">
 
-      <div class="flex flex-col w-1/2 h-full border-r border-gray-300 bg-gray-50">
+      <div class="flex flex-col w-3/5 h-3/4 border-r border-gray-300 bg-gray-50">
         <div class="flex-grow p-4 overflow-y-auto space-y-4">
           <%= for msg <- @messages do %>
             <div class={"flex " <> (if msg.role == :user, do: "justify-end", else: "justify-start")}>
@@ -58,19 +58,19 @@ defmodule LlmChatWeb.PageLive do
           <%= if @is_loading do %>
             <div class="flex justify-start">
               <div class="px-4 py-2 rounded-lg shadow bg-white text-gray-500 italic">
-                Claude réfléchit...
+                I'm thinking...
               </div>
             </div>
           <% end %>
         </div>
-        <div class="p-4 border-t border-gray-300 bg-white">
+        <div class="p-4 border-t border-gray-300 bg-white inset-x-0 bottom-0">
           <form phx-submit="send_message" phx-change="update_input" class="flex space-x-2">
             <input
               type="text"
               name="message"
               value={@current_input}
-              placeholder="Envoyer un message à Claude..."
-              class="flex-grow px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Type your message..."
+              class="flex-grow px-3 py-2  border-transparent resize-none rounded-md focus:border-transparent focus:ring-0"
               autocomplete="off"
               phx-debounce="200"
             />
@@ -79,22 +79,22 @@ defmodule LlmChatWeb.PageLive do
               class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               disabled={@is_loading or String.trim(@current_input) == ""}
             >
-              Envoyer
+              Send
             </button>
           </form>
         </div>
       </div>
 
-      <div class="flex flex-col w-1/2 h-full bg-gray-100">
+      <div class="flex flex-col w-2/5 h-3/4 bg-gray-100">
         <div class="flex-grow p-4 overflow-y-auto space-y-4">
-          <h2 class="text-lg font-semibold text-gray-700 mb-4">Pensées de Claude (Appels d'outils)</h2>
+          <h2 class="text-lg font-semibold text-gray-700 mb-4">My Thoughts</h2>
           <%= if Enum.empty?(@thoughts) do %>
-             <p class="text-gray-500 italic">Aucune pensée pour le moment.</p>
+             <p class="text-gray-500 italic">No thoughts for the moment.</p>
           <% end %>
           <%= for thought <- @thoughts do %>
              <div class="p-3 rounded-lg bg-indigo-900 text-white shadow">
               <%= if thought.text do %>
-               <p class="font-mono text-sm break-words"><%= thought.text %></p>
+               <p class="font-mono text-xs break-words"><%= thought.text %></p>
               <% else %>
                <p class="text-xs text-indigo-300 mt-1">Tool: <%= thought.name %>, input: <%= thought.input %></p>
               <% end %>
@@ -103,7 +103,7 @@ defmodule LlmChatWeb.PageLive do
         </div>
         <div class="p-4 border-t border-gray-300 bg-white text-right">
           <span class="text-sm font-medium text-gray-600">
-            <span class="font-bold text-indigo-700">Tokens utilisés : <%= @total_tokens %><br/>
+            <span class="font-bold text-indigo-700">Tokens used : <%= @total_tokens %>
             (input: <%= @input_tokens %>, output: <%= @output_tokens %>)</span>
           </span>
         </div>
