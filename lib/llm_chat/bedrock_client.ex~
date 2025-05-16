@@ -1,0 +1,128 @@
+defmodule LlmChat.BedrockClient do
+  require Logger
+
+  alias Llm.{Message, Context, Bedrock}
+
+
+  @model_id_nova_pro "amazon.nova-pro-v1:0"
+  @model_id_claude "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
+  @model_id_claude_3 "anthropic.claude-3-haiku-20240307-v1:0"
+  @model_id_deepseek "us.deepseek.r1-v1:0"
+
+  @system_prompt """
+    You are an intelligent assistant. To answer the user's question, you can use the tools provided. Think step by step and
+    verify your answer with the tools.
+
+  When you don't need any information to further process the user's request, just answer by writing
+  Final answer: <answer>
+  """
+
+  # --- Configuration AWS (Exemple simple - À ADAPTER !) ---
+
+  def set_env() do
+    System.put_env("AWS_REGION", "us-east-1")
+    System.put_env("AWS_ACCESS_KEY_ID", "AKIATS3YFZJJ4VAB7ICM")
+    System.put_env("AWS_SECRET_ACCESS_KEY", "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")
+  end
+
+  defp notify_consumption(caller_pid, response) do
+    case response do
+      %{"usage" => %{"inputTokens" => input_tokes, "outputTokens" => output_tokens}} ->
+        send(caller_pid, {:tokens_used, input_tokes, output_tokens})
+    end
+  end
+
+  defp notify_thoughts(caller_pid, thought) do
+    send(caller_pid, {:bedrock_tool_use_only, %{thoughts: [thought]}})
+  end
+
+  defp notify_answer(caller_pid, message) do
+    send(caller_pid, {:bedrock_response, %{role: :assistant, content: message}})
+  end
+
+
+  defp create_context(caller_pid, messages) do
+    Context.new(@model_id_claude, @system_prompt,
+                caller_pid: caller_pid,
+                tools: Tools.ToolRegistry.get_all_tools(),
+                process_tools?: true)
+  end
+
+  def invoke(caller_pid, messages) do
+    create_context(caller_pid, messages)
+    |> add_messages(messages)
+    |> send_request()
+  end
+
+  defp add_messages(context, []), do: context
+  defp add_messages(context, [%{role: "user", content: message} | messages]) do
+    context
+    |> Context.add_message(Message.user(message))
+    |> add_messages(messages)
+  end
+  defp add_messages(context, [%{role: "assistant", content: message} | messages]) do
+    context |> Context.add_message(Message.assistant(message)) |> add_messages(messages)
+  end
+
+  def send_request(context) do
+    Logger.debug(context.messages)
+
+    {:ok, response} =  invoke_bedrock(context)
+
+    notify_consumption(context.caller_pid, response)
+
+    process_response(response, context)
+  end
+
+  defp invoke_bedrock(context) do
+    Bedrock.converse(context.model_id, context.messages, context.system_prompt, context.tools)
+    |> ExAws.request(service_override: :bedrock)
+  end
+
+  defp process_response(%{
+        "stopReason" => "end_turn",
+         "output" => %{"message" => %{"content" => [%{"text" => text} | _]}}}, context) do
+    notify_answer(context.caller_pid, text)
+    :ok
+  end
+  defp process_response(%{
+        "stopReason" => "tool_use",
+         "output" => %{"message" => %{"content" => content} = message}}, context) do
+    if context.process_tool_use do
+      Logger.debug("Tool use: #{inspect(content)}")
+      context = Context.add_message(context, message)
+      process_tool_use(content, context, [])
+    else
+      content
+    end
+  end
+
+
+  def process_tool_use([], context, tool_results) do
+    context
+    |> Context.add_message(Message.tool_results(tool_results))
+    |> send_request()
+  end
+  def process_tool_use([%{"text" => text} | rest], context, tool_results) do
+    notify_thoughts(context.caller_pid, %{text: text})
+    process_tool_use(rest, context, tool_results)
+  end
+  def process_tool_use([%{"toolUse" => %{}} = tool_use | rest], context, tool_results) do
+    result = run_tool(context, tool_use)
+    notify_thoughts(context.caller_pid, %{
+      text: false,
+      name: tool_use["toolUse"]["name"],
+      input: Jason.encode!(tool_use["toolUse"]["input"])})
+    process_tool_use(rest, context, tool_results ++ [result])
+  end
+
+  def run_tool(context, %{
+        "toolUse" => %{"name" => tool_name, "toolUseId" => tool_use_id, "input" => input}
+      }) do
+    tool = Enum.find(context.tools, fn tool -> tool.name() == tool_name end)
+
+    tool.call(input)
+    |> Message.tool_use(tool_use_id)
+  end
+
+end
