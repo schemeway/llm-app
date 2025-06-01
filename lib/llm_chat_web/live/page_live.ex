@@ -18,24 +18,56 @@ defmodule LlmChatWeb.PageLive do
 
     socket =
       assign(socket,
-        messages: [],           # Liste des messages: [%{role: :user | :assistant, content: "..."}]
-        thoughts: [],           # Liste des pensées: [%{tool_use_id: "...", name: "...", input: %{...}, text: "..."}]
         system_prompt: @system_prompt,
         model_id: default_model,
-        current_input: "",
         total_tokens: 0,
         input_tokens: 0,
-        output_tokens: 0,
-        is_loading: false
-      )
+        output_tokens: 0
+      ) |> initialize()
 
     {:ok, socket}
+  end
+
+  defp initialize(socket) do
+    assign(socket,
+      messages: [],
+      thoughts: [],
+      current_input: "",
+      is_loading: false
+    )
   end
 
   @impl true
   def render(assigns) do
     ~H"""
     <div class="flex w-100 h-screen font-sans">
+
+      <div class="flex flex-col w-1/5 h-3/4 border-r border-gray-300 bg-gray-50">
+      <.form phx-submit="update_model" class="p-4">
+          <h1 class="text-xl font-bold text-gray-800 mb-4">Model Selection</h1>
+          <select
+            name="model_id"
+            id="model_id"
+            phx-change="update_model"
+            class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-500"
+          >
+            <%= for model <- Llm.ModelRegistry.list_models() do %>
+              <option value={model} selected={model == @model_id}><%= model %></option>
+            <% end %>
+          </select>
+        </.form>
+
+        <hr/>
+
+        <div class="p-4">
+        <button
+          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          phx-click="reset">
+          Reset
+        </button>
+        </div>
+
+      </div>
 
       <div class="flex flex-col w-3/5 h-3/4 border-r border-gray-300 bg-gray-50">
         <div class="flex-grow p-4 overflow-y-auto space-y-4">
@@ -117,6 +149,23 @@ defmodule LlmChatWeb.PageLive do
   @impl true
   def handle_event("update_input", %{"message" => input}, socket) do
      {:noreply, assign(socket, :current_input, input)}
+  end
+
+  @impl true
+  def handle_event("update_model", %{"model_id" => model_id}, socket) do
+    if model_id in Llm.ModelRegistry.list_models() do
+      socket = assign(socket, model_id: model_id)
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("reset", _params, socket) do
+    Logger.debug("Resetting the chat")
+    socket = initialize(socket)
+    {:noreply, socket}
   end
 
   @impl true

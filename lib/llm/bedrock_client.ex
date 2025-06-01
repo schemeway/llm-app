@@ -56,6 +56,8 @@ defmodule Llm.BedrockClient do
   end
 
   defp invoke_bedrock(context) do
+    Logger.debug("Invoking Bedrock with model: #{context.model_id}")
+
     converse(context.model_id, context.messages, context.system_prompt, context.tools)
     |> ExAws.request(service_override: :bedrock)
   end
@@ -92,10 +94,12 @@ defmodule Llm.BedrockClient do
     |> Context.add_message(Message.tool_results(tool_results))
     |> send_request()
   end
+
   defp process_tool_use([%{"text" => text} | rest], context, tool_results) do
     notify_thoughts(context.caller_pid, %{text: text})
     process_tool_use(rest, context, tool_results)
   end
+
   defp process_tool_use([%{"toolUse" => %{}} = tool_use | rest], context, tool_results) do
     result = run_tool(context, tool_use)
 
@@ -109,17 +113,18 @@ defmodule Llm.BedrockClient do
   end
 
   defp run_tool(context, %{
-        "toolUse" => %{"name" => tool_name, "toolUseId" => tool_use_id, "input" => input}
-      }) do
+         "toolUse" => %{"name" => tool_name, "toolUseId" => tool_use_id, "input" => input}
+       }) do
     tool = Enum.find(context.tools, fn tool -> tool.name() == tool_name end)
 
     tool.call(input)
     |> Message.tool_use(tool_use_id)
   end
 
-
   defp converse(model_id, messages, system_prompt, tools) do
-    data =  %{
+    data =
+      %{
+        anthropic_version: "bedrock-2023-05-31",
         # inferenceConfig: %{
         #   temperature: 1,
         #   topP: 1,
@@ -129,22 +134,29 @@ defmodule Llm.BedrockClient do
         #     topK: 1
         #   }
         # },
-        max_tokens: 5_000,
+        max_tokens: 1_024,
+        max_tokens_to_sample: 1_024,
         thinking: %{
           type: "enabled",
           budget_tokens: 2_000
         },
-        messages: messages,
+        messages: messages
       }
       |> Map.merge(if system_prompt, do: %{system: [%{text: system_prompt}]}, else: %{})
-      |> Map.merge(if tools, do: %{toolConfig: %{tools: tools |> Enum.map(&Tool.build_tool_spec/1)}}, else: %{})
+      |> Map.merge(
+        if tools,
+          do: %{toolConfig: %{tools: tools |> Enum.map(&Tool.build_tool_spec/1)}},
+          else: %{}
+      )
+
+    Logger.debug("Bedrock request data: #{inspect(data)}")
 
     %ExAws.Operation.JSON{
       http_method: :post,
       headers: [{"Content-Type", "application/json"}],
       data: data,
       path: "/model/#{model_id}/converse",
-      service: :"bedrock-runtime",
+      service: :"bedrock-runtime"
     }
   end
 end

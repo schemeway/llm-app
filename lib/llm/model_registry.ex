@@ -11,11 +11,13 @@ defmodule Llm.ModelRegistry do
 
   @impl true
   def init(:ok) do
-    models =   [
-      "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+    models = [
       "amazon.nova-pro-v1:0",
+      "arn:aws:bedrock:us-east-1:246675786323:inference-profile/us.anthropic.claude-sonnet-4-20250514-v1:0",
+      "us.anthropic.claude-sonnet-4-20250514-v1:0",
+      "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
       "anthropic.claude-3-haiku-20240307-v1:0",
-      "us.deepseek.r1-v1:0",
+      "us.deepseek.r1-v1:0"
     ]
 
     {:ok, %{models: models}}
@@ -34,6 +36,7 @@ defmodule Llm.ModelRegistry do
     new_state = %{state | models: [model_id | state.models]}
     {:noreply, new_state}
   end
+
   @impl true
   def handle_call(:list_model, _from, state) do
     {:reply, state.models, state}
