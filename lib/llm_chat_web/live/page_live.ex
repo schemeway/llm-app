@@ -2,7 +2,8 @@ defmodule LlmChatWeb.PageLive do
   use LlmChatWeb, :live_view
   require Logger
 
-  alias Llm.Bedrock # Module à créer pour l'interaction Bedrock
+  # Module à créer pour l'interaction Bedrock
+  alias Llm.Bedrock
 
   @system_prompt """
     You are an intelligent assistant. To answer the user's question, you can use the tools provided. Think step by step and
@@ -24,7 +25,8 @@ defmodule LlmChatWeb.PageLive do
         total_tokens: 0,
         input_tokens: 0,
         output_tokens: 0
-      ) |> initialize()
+      )
+      |> initialize()
 
     {:ok, socket}
   end
@@ -51,9 +53,9 @@ defmodule LlmChatWeb.PageLive do
             id="model_id"
             phx-change="update_model"
             class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-500"
-          >
+            >
             <%= for model <- Llm.ModelRegistry.list_models() do %>
-              <option value={model} selected={model == @model_id}><%= model %></option>
+              <option value={model.id} selected={model.id == @model_id}><%= model.name %></option>
             <% end %>
           </select>
 
@@ -170,12 +172,13 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def handle_event("update_input", %{"message" => input}, socket) do
-     {:noreply, assign(socket, :current_input, input)}
+    {:noreply, assign(socket, :current_input, input)}
   end
 
   @impl true
   def handle_event("update_model", %{"model_id" => model_id}, socket) do
-    if model_id in Llm.ModelRegistry.list_models() do
+    if Llm.ModelRegistry.list_models()
+       |> Enum.find(fn model -> model.id == model_id end) do
       socket = assign(socket, model_id: model_id)
       {:noreply, socket}
     else
@@ -208,6 +211,7 @@ defmodule LlmChatWeb.PageLive do
   @impl true
   def handle_event("send_message", %{"message" => user_input}, socket) do
     trimmed_input = String.trim(user_input)
+
     if trimmed_input == "" or socket.assigns.is_loading do
       {:noreply, socket}
     else
@@ -221,9 +225,18 @@ defmodule LlmChatWeb.PageLive do
           is_loading: true
         )
 
-      bedrock_messages = Enum.map(new_messages, fn msg -> %{role: Atom.to_string(msg.role), content: msg.content} end)
+      bedrock_messages =
+        Enum.map(new_messages, fn msg ->
+          %{role: Atom.to_string(msg.role), content: msg.content}
+        end)
 
-      Bedrock.invoke(self(), socket.assigns.model_id, socket.assigns.system_prompt, socket.assigns.tools, bedrock_messages)
+      Bedrock.invoke(
+        self(),
+        socket.assigns.model_id,
+        socket.assigns.system_prompt,
+        socket.assigns.tools,
+        bedrock_messages
+      )
 
       {:noreply, socket}
     end
@@ -258,7 +271,9 @@ defmodule LlmChatWeb.PageLive do
   def handle_info({:bedrock_error, error_details}, socket) do
     IO.inspect(error_details, label: "Bedrock Error")
     # Ajouter un message d'erreur à l'interface si désiré
-    messages = socket.assigns.messages ++ [%{role: :assistant, content: "Désolé, une erreur s'est produite."}]
+    messages =
+      socket.assigns.messages ++
+        [%{role: :assistant, content: "Désolé, une erreur s'est produite."}]
 
     socket = assign(socket, messages: messages, is_loading: false)
     {:noreply, socket}
@@ -266,14 +281,14 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def handle_info({:bedrock_tool_use_only, response_data}, socket) do
-     thoughts = socket.assigns.thoughts ++ response_data.thoughts
+    thoughts = socket.assigns.thoughts ++ response_data.thoughts
 
-     socket =
-       assign(socket,
-         thoughts: thoughts,
-         is_loading: false
-       )
-     {:noreply, socket}
+    socket =
+      assign(socket,
+        thoughts: thoughts,
+        is_loading: false
+      )
+
+    {:noreply, socket}
   end
-
 end
