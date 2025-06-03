@@ -13,7 +13,8 @@ defmodule Llm.ModelRegistry do
   def init(:ok) do
     models = [
       "amazon.nova-pro-v1:0",
-      "arn:aws:bedrock:us-east-1:246675786323:inference-profile/us.anthropic.claude-sonnet-4-20250514-v1:0",
+      "arn:aws:bedrock:us-east-1:246675786323:inference-profile/us.anthropic.claude-opus-4-20250514-v1:0",
+      "us.anthropic.claude-opus-4-20250514-v1:0",
       "us.anthropic.claude-sonnet-4-20250514-v1:0",
       "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
       "anthropic.claude-3-haiku-20240307-v1:0",

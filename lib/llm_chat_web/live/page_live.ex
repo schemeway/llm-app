@@ -20,6 +20,7 @@ defmodule LlmChatWeb.PageLive do
       assign(socket,
         system_prompt: @system_prompt,
         model_id: default_model,
+        tools: Tools.ToolRegistry.get_all_tools() |> Enum.map(& &1.name()),
         total_tokens: 0,
         input_tokens: 0,
         output_tokens: 0
@@ -55,6 +56,27 @@ defmodule LlmChatWeb.PageLive do
               <option value={model} selected={model == @model_id}><%= model %></option>
             <% end %>
           </select>
+
+          <hr/>
+          <h1 class="text-xl font-bold text-gray-800 mt-4 mb-4">Tools</h1>
+
+          <%= for tool <- Tools.ToolRegistry.get_all_tools() do %>
+            <div class="mb-2">
+              <label class="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  name="tools"
+                  value={tool.name()}
+                  checked={tool.name() in @tools}
+                  phx-click="toggle_tool"
+                  phx-value-tool={tool.name()}
+                  class="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span class="ml-2 text-gray-700"><%= tool.name() %></span>
+              </label>
+            </div>
+          <% end %>
+
         </.form>
 
         <hr/>
@@ -119,7 +141,7 @@ defmodule LlmChatWeb.PageLive do
 
       <div class="flex flex-col w-2/5 h-3/4 bg-gray-100">
         <div class="flex-grow p-4 overflow-y-auto space-y-4">
-          <h2 class="text-lg font-semibold text-gray-700 mb-4">My Thoughts</h2>
+          <h2 class="text-lg font-semibold text-gray-700 mb-4">Thoughts</h2>
           <%= if Enum.empty?(@thoughts) do %>
              <p class="text-gray-500 italic">No thoughts for the moment.</p>
           <% end %>
@@ -162,6 +184,21 @@ defmodule LlmChatWeb.PageLive do
   end
 
   @impl true
+  def handle_event("toggle_tool", %{"tool" => tool_name}, socket) do
+    tools = socket.assigns.tools
+
+    Logger.debug("Toggling tool: #{tool_name}")
+
+    if tool_name in tools do
+      new_tools = List.delete(tools, tool_name)
+      {:noreply, assign(socket, tools: new_tools)}
+    else
+      new_tools = tools ++ [tool_name]
+      {:noreply, assign(socket, tools: new_tools)}
+    end
+  end
+
+  @impl true
   def handle_event("reset", _params, socket) do
     Logger.debug("Resetting the chat")
     socket = initialize(socket)
@@ -186,7 +223,7 @@ defmodule LlmChatWeb.PageLive do
 
       bedrock_messages = Enum.map(new_messages, fn msg -> %{role: Atom.to_string(msg.role), content: msg.content} end)
 
-      Bedrock.invoke(self(), socket.assigns.model_id, socket.assigns.system_prompt, bedrock_messages)
+      Bedrock.invoke(self(), socket.assigns.model_id, socket.assigns.system_prompt, socket.assigns.tools, bedrock_messages)
 
       {:noreply, socket}
     end

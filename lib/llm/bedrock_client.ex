@@ -19,16 +19,20 @@ defmodule Llm.BedrockClient do
     send(caller_pid, {:bedrock_response, %{role: :assistant, content: message}})
   end
 
-  def invoke(caller_pid, model, system_prompt, messages) do
-    create_context(caller_pid, model, system_prompt)
+  def invoke(caller_pid, model, system_prompt, tools, messages) do
+    create_context(caller_pid, model, system_prompt, tools)
     |> add_messages(messages)
     |> send_request()
   end
 
-  defp create_context(caller_pid, model, system_prompt) do
+  defp create_context(caller_pid, model, system_prompt, tools) do
+    selected_tools =
+      Tools.ToolRegistry.get_all_tools()
+      |> Enum.filter(fn tool -> tool.name() in tools end)
+
     Context.new(model, system_prompt,
       caller_pid: caller_pid,
-      tools: Tools.ToolRegistry.get_all_tools(),
+      tools: selected_tools,
       process_tools?: true
     )
   end
