@@ -15,7 +15,7 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    default_model = Llm.ModelRegistry.list_models() |> List.first()
+    default_model = Llm.ModelRegistry.list_models() |> List.first() |> Map.get(:id)
 
     socket =
       assign(socket,
