@@ -7,6 +7,9 @@ defmodule Tools.ToolRegistry do
 
   def start_link(_) do
     default_tools = [
+      Tools.DirReader,
+      Tools.File.FileReader,
+      Tools.File.FileWriter,
       Tools.Calculator,
       Tools.CurrencyRate,
       Tools.RomanConverter
