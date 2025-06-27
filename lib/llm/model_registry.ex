@@ -14,11 +14,12 @@ defmodule Llm.ModelRegistry do
   @impl true
   def init(:ok) do
     models = [
-      %Model{name: "Nova", id: "amazon.nova-pro-v1:0"},
+      %Model{name: "Claude 3.5 Haiku - CRI", id: "us.anthropic.claude-3-5-haiku-20241022-v1:0"},
       %Model{name: "Claude 4 Opus - CRI", id: "us.anthropic.claude-opus-4-20250514-v1:0"},
       %Model{name: "Claude 4 Sonnet - CRI", id: "us.anthropic.claude-sonnet-4-20250514-v1:0"},
       %Model{name: "Claude 3.7 Sonnet - CRI", id: "us.anthropic.claude-3-7-sonnet-20250219-v1:0"},
-      %Model{name: "Claude 3 Haiku", id: "anthropic.claude-3-haiku-20240307-v1:0"},
+      %Model{name: "Clude 3 Haku", id: "anthropic.claude-3-haiku-20240307-v1:0"},
+      %Model{name: "Nova", id: "amazon.nova-pro-v1:0"},
       %Model{name: "DeepSeek R1 - CRI", id: "us.deepseek.r1-v1:0"}
     ]
 
