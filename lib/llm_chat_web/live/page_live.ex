@@ -107,7 +107,7 @@ defmodule LlmChatWeb.PageLive do
                     end
                 }
               >
-                <%= msg.content %>
+                <%= {:safe, Earmark.as_html!(msg.content, escape: true, inner_html: true)} %>
               </div>
             </div>
           <% end %>
