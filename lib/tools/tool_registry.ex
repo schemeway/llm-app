@@ -8,11 +8,9 @@ defmodule Tools.ToolRegistry do
   def start_link(_) do
     default_tools = [
       Tools.DirReader,
+      Tools.DirCreator,
       Tools.File.FileReader,
       Tools.File.FileWriter,
-      Tools.Calculator,
-      Tools.CurrencyRate,
-      Tools.RomanConverter
     ]
 
     Agent.start_link(fn -> default_tools end, name: __MODULE__)
