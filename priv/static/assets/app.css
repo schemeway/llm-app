@@ -1872,6 +1872,20 @@ select {
 
 /* This file is for your main application CSS */
 
+ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
 .hover\:cursor-pointer:hover {
   cursor: pointer;
 }
