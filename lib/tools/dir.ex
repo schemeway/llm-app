@@ -48,4 +48,30 @@ defmodule Tools.Dir do
       end
     end
   end
+
+  defmodule DirChanger do
+    use Tools.Tool,
+      description: "A tool for changing the current working directory.",
+      parameters: %{
+        "dir_path" => %{
+          "type" => "string",
+          "description" => "the path to the directory to change to"
+        }
+      }
+
+    def call(%{"dir_path" => dir_path}) do
+      Logger.debug("Attempting to change directory to #{dir_path}")
+
+      case File.cd(dir_path) do
+        :ok ->
+          current_dir = File.cwd!()
+          Logger.info("Successfully changed directory to #{current_dir}")
+          %{"result" => "Directory changed successfully", "current_directory" => current_dir}
+
+        {:error, reason} ->
+          Logger.error("Failed to change directory: #{reason}")
+          %{"error" => "Failed to change directory: #{reason}"}
+      end
+    end
+  end
 end

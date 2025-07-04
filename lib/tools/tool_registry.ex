@@ -9,6 +9,7 @@ defmodule Tools.ToolRegistry do
     default_tools = [
       Tools.Dir.DirReader,
       Tools.Dir.DirCreator,
+      Tools.Dir.DirChanger,
       Tools.File.FileReader,
       Tools.File.FileWriter,
     ]
