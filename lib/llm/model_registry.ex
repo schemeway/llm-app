@@ -14,13 +14,14 @@ defmodule Llm.ModelRegistry do
   @impl true
   def init(:ok) do
     models = [
-      %Model{name: "Claude 3.5 Haiku - CRI", id: "us.anthropic.claude-3-5-haiku-20241022-v1:0"},
-      %Model{name: "Claude 4 Opus - CRI", id: "us.anthropic.claude-opus-4-20250514-v1:0"},
-      %Model{name: "Claude 4 Sonnet - CRI", id: "us.anthropic.claude-sonnet-4-20250514-v1:0"},
-      %Model{name: "Claude 3.7 Sonnet - CRI", id: "us.anthropic.claude-3-7-sonnet-20250219-v1:0"},
-      %Model{name: "Clude 3 Haku", id: "anthropic.claude-3-haiku-20240307-v1:0"},
-      %Model{name: "Nova", id: "amazon.nova-pro-v1:0"},
-      %Model{name: "DeepSeek R1 - CRI", id: "us.deepseek.r1-v1:0"}
+      %Model{name: "Claude 3.5 Haiku - CRI", id: "us.anthropic.claude-3-5-haiku-20241022-v1:0", rate: 20},
+      %Model{name: "Claude 4 Opus - CRI", id: "us.anthropic.claude-opus-4-20250514-v1:0", rate: 2},
+      %Model{name: "Claude 4 Sonnet - CRI US", id: "us.anthropic.claude-sonnet-4-20250514-v1:0", rate: 2},
+      %Model{name: "Claude 4 Sonnet - CRI EU", id: "eu.anthropic.claude-sonnet-4-20250514-v1:0", rate: 2},
+      %Model{name: "Claude 3.7 Sonnet - CRI", id: "us.anthropic.claude-3-7-sonnet-20250219-v1:0", rate: 4},
+      %Model{name: "Clude 3 Haku", id: "anthropic.claude-3-haiku-20240307-v1:0", rate: 20},
+      %Model{name: "Nova", id: "amazon.nova-pro-v1:0", rate: 10},
+      %Model{name: "DeepSeek R1 - CRI", id: "us.deepseek.r1-v1:0", rate: 20}
     ]
 
     {:ok, %{models: models}}
@@ -35,8 +36,8 @@ defmodule Llm.ModelRegistry do
   end
 
   @impl true
-  def handle_cast({:register_model, model_name, model_id}, state) do
-    new_state = %{state | models: [%Model{name: model_name, id: model_id} | state.models]}
+  def handle_cast({:register_model, model_name, model_id, rate}, state) do
+    new_state = %{state | models: [%Model{name: model_name, id: model_id, rate: rate} | state.models]}
     {:noreply, new_state}
   end
 
