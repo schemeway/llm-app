@@ -4,6 +4,7 @@ defmodule Llm.BedrockClient do
   alias Llm.{Message, Context}
   alias Tools.Tool
 
+
   defp notify_consumption(caller_pid, response) do
     case response do
       %{"usage" => %{"inputTokens" => input_tokes, "outputTokens" => output_tokens}} ->
@@ -19,6 +20,9 @@ defmodule Llm.BedrockClient do
     send(caller_pid, {:bedrock_response, %{role: :assistant, content: message}})
   end
 
+  @spec invoke(any(), any(), any(), any(), [
+          %{:content => any(), :role => <<_::32, _::_*40>>, optional(any()) => any()}
+        ]) :: any()
   def invoke(caller_pid, model, system_prompt, tools, messages) do
     create_context(caller_pid, model, system_prompt, tools)
     |> add_messages(messages)
@@ -52,11 +56,20 @@ defmodule Llm.BedrockClient do
   defp send_request(context) do
     Logger.debug(context.messages)
 
-    {:ok, response} = invoke_bedrock(context)
+    case invoke_bedrock(context) do
+      {:ok, response} ->
+        notify_consumption(context.caller_pid, response)
+        process_response(response, context)
 
-    notify_consumption(context.caller_pid, response)
+      {:error, {:http_error, 429, _}} ->
+        Logger.warning("Bedrock invocation rate limit exceeded, retrying in 30 seconds...")
+        Process.sleep(30_000)
+        send_request(context)
 
-    process_response(response, context)
+      {:error, reason} ->
+        Logger.error("Bedrock invocation failed: #{inspect(reason)}")
+        send(context.caller_pid, {:bedrock_error, reason})
+    end
   end
 
   defp invoke_bedrock(context) do
@@ -129,15 +142,6 @@ defmodule Llm.BedrockClient do
     data =
       %{
         anthropic_version: "bedrock-2023-05-31",
-        # inferenceConfig: %{
-        #   temperature: 1,
-        #   topP: 1,
-        # },
-        # additionalModelRequestFields: %{
-        #   inferenceConfig: %{
-        #     topK: 1
-        #   }
-        # },
         max_tokens: 1_024,
         max_tokens_to_sample: 1_024,
         thinking: %{
