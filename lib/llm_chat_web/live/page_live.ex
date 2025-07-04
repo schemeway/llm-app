@@ -47,7 +47,7 @@ defmodule LlmChatWeb.PageLive do
 
       <div class="flex flex-col w-1/5 h-3/4 border-r border-gray-300 bg-gray-50">
       <.form phx-submit="update_model" class="p-4">
-          <h1 class="text-xl font-bold text-gray-800 mb-4">Model Selection</h1>
+          <h1 class="text-xl font-bold text-gray-800 mb-4">Model</h1>
           <select
             name="model_id"
             id="model_id"
@@ -74,8 +74,11 @@ defmodule LlmChatWeb.PageLive do
                   phx-value-tool={tool.name()}
                   class="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <span title={tool.description()} class="ml-2 text-gray-700"><%= tool.name() %></span>
+                <span class="ml-2 text-gray-700"><%= tool.name() %></span>
               </label>
+              <div class="text-xs text-gray-500 ml-2">
+                  <%= tool.description() %>
+              </div>
             </div>
           <% end %>
 
