@@ -6,15 +6,19 @@ defmodule Tools.ToolRegistry do
   """
 
   def start_link(_) do
-    default_tools = [
+    Logger.debug("Starting ToolRegistry with default tools")
+    Agent.start_link(fn -> default_tools() end, name: __MODULE__)
+  end
+
+  defp default_tools do
+    [
       Tools.Dir.DirReader,
       Tools.Dir.DirCreator,
       Tools.Dir.DirChanger,
       Tools.File.FileReader,
       Tools.File.FileWriter,
+      Tools.WebScraper
     ]
-
-    Agent.start_link(fn -> default_tools end, name: __MODULE__)
   end
 
   def init((init_arg)) do
