@@ -4,7 +4,8 @@ defmodule LlmChatWeb.PageLive do
 
   # Module à créer pour l'interaction Bedrock
   alias Llm.Bedrock
-  import LlmChatWeb.Toolbar, only: [toolbar: 1]
+  import LlmChatWeb.Component.Toolbar, only: [toolbar: 1]
+  import LlmChatWeb.Component.Conversation, only: [conversation: 1]
 
   @system_prompt """
     You are an intelligent assistant. To answer the user's question, you can use the tools provided. Think step by step and
@@ -44,66 +45,16 @@ defmodule LlmChatWeb.PageLive do
   def render(assigns) do
     ~H"""
     <div class="flex w-100 h-screen font-sans">
-      <.toolbar model_id={@model_id} tools={@tools} />
 
-      <div class="flex flex-col w-3/5 h-screen border-r border-gray-300 bg-gray-50">
-        <div class="flex-grow p-4 overflow-y-auto space-y-4">
-          <%= for event <- @events do %>
-            <%= if event.role == :thought do %>
-             <div class="p-3 mx-[30px] rounded-lg bg-indigo-900 text-white shadow">
-              <%= if event.content.text do %>
-               <p class="font-mono text-xs break-words"><%= event.content.text %></p>
-              <% else %>
-               <p class="text-xs text-indigo-300 mt-1">Tool: <%= event.content.name %>, input: <%= event.content.input %></p>
-              <% end %>
-             </div>
+      <.toolbar model_id={@model_id} tools={@tools} phx_change="update_model"/>
 
-            <%= else %>
-              <div class={"flex " <> (if event.role == :user, do: "justify-end", else: "justify-start")}>
-                <div
-                  class={
-                    "max-w-xl px-4 py-2 rounded-lg shadow " <>
-                    case event.role do
-                      :user -> "bg-blue-500 text-white"
-                      :assistant -> "bg-white text-gray-800"
-                      _ -> "bg-gray-100 text-gray-800"
-                    end
-                  }
-                >
-                  <%= {:safe, Earmark.as_html!(event.content, escape: true, inner_html: true)} %>
-                </div>
-              </div>
-            <% end %>
-          <% end %>
-          <%= if @is_loading do %>
-            <div class="flex justify-start">
-              <div class="px-4 py-2 rounded-lg shadow bg-white text-gray-500 italic">
-                I'm thinking...
-              </div>
-            </div>
-          <% end %>
-        </div>
-        <div class="p-4 border-t border-gray-300 bg-white inset-x-0 bottom-0">
-          <form phx-submit="send_message" phx-change="update_input" class="flex space-x-2">
-            <input
-              type="text"
-              name="message"
-              value={@current_input}
-              placeholder="Type your message..."
-              class="flex-grow px-3 py-2  border-transparent resize-none rounded-md focus:border-transparent focus:ring-0"
-              autocomplete="off"
-              phx-debounce="200"
-            />
-            <button
-              type="submit"
-              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-              disabled={@is_loading or String.trim(@current_input) == ""}
-            >
-              Send
-            </button>
-          </form>
-        </div>
-      </div>
+      <.conversation
+        events={@events}
+        current_input={@current_input}
+        is_loading={@is_loading}
+        phx_change="update_input"
+        phx_submit="send_message"
+      />
 
       <div class="flex flex-col w-2/5 h-screen bg-gray-100">
         <div class="flex-grow p-4 overflow-y-auto space-y-4">
