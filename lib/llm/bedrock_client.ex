@@ -13,7 +13,7 @@ defmodule Llm.BedrockClient do
   end
 
   defp notify_thoughts(caller_pid, thought) do
-    send(caller_pid, {:bedrock_tool_use_only, %{thoughts: [thought]}})
+    send(caller_pid, {:bedrock_tool_use_only, %{role: :thought, content: thought}})
   end
 
   defp notify_answer(caller_pid, message) do

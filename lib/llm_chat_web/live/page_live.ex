@@ -33,8 +33,7 @@ defmodule LlmChatWeb.PageLive do
 
   defp initialize(socket) do
     assign(socket,
-      messages: [],
-      thoughts: [],
+      events: [],
       current_input: "",
       is_loading: false
     )
@@ -45,8 +44,9 @@ defmodule LlmChatWeb.PageLive do
     ~H"""
     <div class="flex w-100 h-screen font-sans">
 
-      <div class="flex flex-col w-1/5 h-3/4 border-r border-gray-300 bg-gray-50">
-      <.form phx-submit="update_model" class="p-4">
+      <div class="flex flex-col w-1/5 h-screen border-r border-gray-300 bg-gray-50">
+      <.form phx-submit="update_model" class="p-4 h-dvh overflow-y-auto">
+        <div>
           <h1 class="text-xl font-bold text-gray-800 mb-4">Model</h1>
           <select
             name="model_id"
@@ -58,8 +58,8 @@ defmodule LlmChatWeb.PageLive do
               <option value={model.id} selected={model.id == @model_id}><%= model.name %></option>
             <% end %>
           </select>
+        </div>
 
-          <hr/>
           <h1 class="text-xl font-bold text-gray-800 mt-4 mb-4">Tools</h1>
 
           <%= for tool <- Tools.ToolRegistry.get_all_tools() do %>
@@ -81,10 +81,7 @@ defmodule LlmChatWeb.PageLive do
               </div>
             </div>
           <% end %>
-
         </.form>
-
-        <hr/>
 
         <div class="p-4">
         <button
@@ -96,23 +93,34 @@ defmodule LlmChatWeb.PageLive do
 
       </div>
 
-      <div class="flex flex-col w-3/5 h-3/4 border-r border-gray-300 bg-gray-50">
+      <div class="flex flex-col w-3/5 h-screen border-r border-gray-300 bg-gray-50">
         <div class="flex-grow p-4 overflow-y-auto space-y-4">
-          <%= for msg <- @messages do %>
-            <div class={"flex " <> (if msg.role == :user, do: "justify-end", else: "justify-start")}>
-              <div
-                class={
-                  "max-w-xl px-4 py-2 rounded-lg shadow " <>
-                    if msg.role == :user do
-                      "bg-blue-500 text-white"
-                    else
-                      "bg-white text-gray-800"
+          <%= for event <- @events do %>
+            <%= if event.role == :thought do %>
+             <div class="p-3 mx-[30px] rounded-lg bg-indigo-900 text-white shadow">
+              <%= if event.content.text do %>
+               <p class="font-mono text-xs break-words"><%= event.content.text %></p>
+              <% else %>
+               <p class="text-xs text-indigo-300 mt-1">Tool: <%= event.content.name %>, input: <%= event.content.input %></p>
+              <% end %>
+             </div>
+
+            <%= else %>
+              <div class={"flex " <> (if event.role == :user, do: "justify-end", else: "justify-start")}>
+                <div
+                  class={
+                    "max-w-xl px-4 py-2 rounded-lg shadow " <>
+                    case event.role do
+                      :user -> "bg-blue-500 text-white"
+                      :assistant -> "bg-white text-gray-800"
+                      _ -> "bg-gray-100 text-gray-800"
                     end
-                }
-              >
-                <%= {:safe, Earmark.as_html!(msg.content, escape: true, inner_html: true)} %>
+                  }
+                >
+                  <%= {:safe, Earmark.as_html!(event.content, escape: true, inner_html: true)} %>
+                </div>
               </div>
-            </div>
+            <% end %>
           <% end %>
           <%= if @is_loading do %>
             <div class="flex justify-start">
@@ -144,21 +152,9 @@ defmodule LlmChatWeb.PageLive do
         </div>
       </div>
 
-      <div class="flex flex-col w-2/5 h-3/4 bg-gray-100">
+      <div class="flex flex-col w-2/5 h-screen bg-gray-100">
         <div class="flex-grow p-4 overflow-y-auto space-y-4">
-          <h2 class="text-lg font-semibold text-gray-700 mb-4">Thoughts</h2>
-          <%= if Enum.empty?(@thoughts) do %>
-             <p class="text-gray-500 italic">No thoughts for the moment.</p>
-          <% end %>
-          <%= for thought <- @thoughts do %>
-             <div class="p-3 rounded-lg bg-indigo-900 text-white shadow">
-              <%= if thought.text do %>
-               <p class="font-mono text-xs break-words"><%= thought.text %></p>
-              <% else %>
-               <p class="text-xs text-indigo-300 mt-1">Tool: <%= thought.name %>, input: <%= thought.input %></p>
-              <% end %>
-             </div>
-          <% end %>
+          <h1 class="text-xl font-bold text-gray-800 mb-4">Conversations</h1>
         </div>
         <div class="p-4 border-t border-gray-300 bg-white text-right">
           <span class="text-sm font-medium text-gray-600">
@@ -218,18 +214,20 @@ defmodule LlmChatWeb.PageLive do
     if trimmed_input == "" or socket.assigns.is_loading do
       {:noreply, socket}
     else
-      new_messages = socket.assigns.messages ++ [%{role: :user, content: trimmed_input}]
+      new_messages = socket.assigns.events ++ [%{role: :user, content: trimmed_input}]
 
       # Mettre à jour l'UI immédiatement avec le message utilisateur
       socket =
         assign(socket,
-          messages: new_messages,
+          events: new_messages,
           current_input: "",
           is_loading: true
         )
 
       bedrock_messages =
-        Enum.map(new_messages, fn msg ->
+        new_messages
+        |> Enum.filter(fn msg -> msg.role != :thought end)
+        |> Enum.map(fn msg ->
           %{role: Atom.to_string(msg.role), content: msg.content}
         end)
 
@@ -247,11 +245,11 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def handle_info({:bedrock_response, response_data}, socket) do
-    messages = socket.assigns.messages ++ [%{role: :assistant, content: response_data.content}]
+    events = socket.assigns.events ++ [%{role: :assistant, content: response_data.content}]
 
     socket =
       assign(socket,
-        messages: messages,
+        events: events,
         is_loading: false
       )
 
@@ -274,21 +272,21 @@ defmodule LlmChatWeb.PageLive do
   def handle_info({:bedrock_error, error_details}, socket) do
     IO.inspect(error_details, label: "Bedrock Error")
     # Ajouter un message d'erreur à l'interface si désiré
-    messages =
-      socket.assigns.messages ++
+    events =
+      socket.assigns.events ++
         [%{role: :assistant, content: "Désolé, une erreur s'est produite."}]
 
-    socket = assign(socket, messages: messages, is_loading: false)
+    socket = assign(socket, events: events, is_loading: false)
     {:noreply, socket}
   end
 
   @impl true
   def handle_info({:bedrock_tool_use_only, response_data}, socket) do
-    thoughts = socket.assigns.thoughts ++ response_data.thoughts
+    events = socket.assigns.events ++ [response_data]
 
     socket =
       assign(socket,
-        thoughts: thoughts,
+        events: events,
         is_loading: false
       )
 
