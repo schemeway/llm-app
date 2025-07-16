@@ -75,7 +75,14 @@ defmodule LlmChatWeb.Component.Conversation do
 
   def conversation(assigns) do
     ~H"""
-    <div class="flex flex-col w-3/5 h-screen border-r border-gray-300 bg-gray-50">
+    <div class="flex flex-col w-2/5 h-screen border-r border-gray-300 bg-gray-50">
+        <div class="p-4 border-b border-gray-300 bg-white text-right">
+          <span class="text-sm font-medium text-gray-600">
+            <span class="font-bold text-indigo-700">Tokens used : <%= @total_tokens %>
+            (input: <%= @input_tokens %>, output: <%= @output_tokens %>)</span>
+          </span>
+        </div>
+
       <div class="flex-grow p-4 overflow-y-auto space-y-4">
 
         <.event :for={event <- @events} event={event} />

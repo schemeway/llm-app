@@ -48,25 +48,24 @@ defmodule LlmChatWeb.PageLive do
 
       <.toolbar model_id={@model_id} tools={@tools} phx_change="update_model"/>
 
+      <div class="flex flex-col w-2/5 h-screen bg-gray-100">
+        <div class="flex-grow p-4 overflow-y-auto space-y-4">
+          <h1 class="text-xl font-bold text-gray-800 mb-4">Agents</h1>
+        </div>
+      </div>
+
       <.conversation
         events={@events}
         current_input={@current_input}
         is_loading={@is_loading}
         phx_change="update_input"
         phx_submit="send_message"
+        input_tokens={@input_tokens}
+        output_tokens={@output_tokens}
+        total_tokens={@total_tokens}
       />
 
-      <div class="flex flex-col w-2/5 h-screen bg-gray-100">
-        <div class="flex-grow p-4 overflow-y-auto space-y-4">
-          <h1 class="text-xl font-bold text-gray-800 mb-4">Conversations</h1>
-        </div>
-        <div class="p-4 border-t border-gray-300 bg-white text-right">
-          <span class="text-sm font-medium text-gray-600">
-            <span class="font-bold text-indigo-700">Tokens used : <%= @total_tokens %>
-            (input: <%= @input_tokens %>, output: <%= @output_tokens %>)</span>
-          </span>
-        </div>
-      </div>
+
     </div>
     """
   end
