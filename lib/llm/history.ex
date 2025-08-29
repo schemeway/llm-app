@@ -1,7 +1,7 @@
 defmodule Llm.History do
 
   def save_conversation(history, id, messages) do
-    dir = File.cwd!() <> "/data/history"
+    dir = get_history_path()
     File.mkdir_p!(dir)
     file_path = Path.join(dir, "#{id}")
     File.write!(file_path, Jason.encode!(messages, pretty: true))
@@ -9,7 +9,7 @@ defmodule Llm.History do
   end
 
   def read_history do
-    dir = File.cwd!() <> "/data/history"
+    dir = get_history_path()
 
     File.ls!(dir)
     |> Enum.map(fn file ->
@@ -17,6 +17,10 @@ defmodule Llm.History do
       {file, Jason.decode!(content)}
     end)
     |> Enum.into(Map.new())
+  end
+
+  defp get_history_path() do
+    System.get_env("HOME") <> "/.llm-app/data/history"
   end
 
 end
