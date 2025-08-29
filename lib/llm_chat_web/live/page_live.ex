@@ -53,8 +53,6 @@ defmodule LlmChatWeb.PageLive do
     ~H"""
     <div class="flex w-100 h-screen font-sans">
 
-      <.toolbar model_id={@model_id} tools={@tools} phx_change="update_model"/>
-
       <.history conversations={@history} id={@id}/>
 
       <.conversation
@@ -67,6 +65,8 @@ defmodule LlmChatWeb.PageLive do
         output_tokens={@output_tokens}
         total_tokens={@total_tokens}
       />
+
+      <.toolbar model_id={@model_id} tools={@tools} phx_change="update_model"/>
 
 
     </div>
