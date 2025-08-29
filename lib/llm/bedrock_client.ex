@@ -13,11 +13,11 @@ defmodule Llm.BedrockClient do
   end
 
   defp notify_thoughts(caller_pid, thought) do
-    send(caller_pid, {:bedrock_tool_use_only, %{role: :thought, content: thought}})
+    send(caller_pid, {:bedrock_tool_use_only, %{"role" => "thought", "content" => thought}})
   end
 
   defp notify_answer(caller_pid, message) do
-    send(caller_pid, {:bedrock_response, %{role: :assistant, content: message}})
+    send(caller_pid, {:bedrock_response, %{"role" => "assistant", "content" => message}})
   end
 
   @spec invoke(any(), any(), any(), any(), [
@@ -43,13 +43,13 @@ defmodule Llm.BedrockClient do
 
   defp add_messages(context, []), do: context
 
-  defp add_messages(context, [%{role: "user", content: message} | messages]) do
+  defp add_messages(context, [%{"role" => "user", "content" => message} | messages]) do
     context
     |> Context.add_message(Message.user(message))
     |> add_messages(messages)
   end
 
-  defp add_messages(context, [%{role: "assistant", content: message} | messages]) do
+  defp add_messages(context, [%{"role" => "assistant", "content" => message} | messages]) do
     context |> Context.add_message(Message.assistant(message)) |> add_messages(messages)
   end
 

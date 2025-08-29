@@ -58,6 +58,7 @@ defmodule LlmChat.MixProject do
       {:bandit, "~> 1.5"},
       {:hackney, "~> 1.18.0"},
       {:req, "~> 0.5.0"},
+      {:uuid, "~> 1.1"},
       {:ex_aws_bedrock, "~> 2.5.0"},
 
     ]

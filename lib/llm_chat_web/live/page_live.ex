@@ -6,6 +6,7 @@ defmodule LlmChatWeb.PageLive do
   alias Llm.Bedrock
   import LlmChatWeb.Component.Toolbar, only: [toolbar: 1]
   import LlmChatWeb.Component.Conversation, only: [conversation: 1]
+  import LlmChatWeb.Component.History, only: [history: 1]
 
   @system_prompt """
     You are an intelligent assistant. To answer the user's question, you can use the tools provided. Think step by step and
@@ -26,19 +27,25 @@ defmodule LlmChatWeb.PageLive do
         tools: Tools.ToolRegistry.get_all_tools() |> Enum.map(& &1.name()),
         total_tokens: 0,
         input_tokens: 0,
-        output_tokens: 0
+        output_tokens: 0,
+        history: Llm.History.read_history()
       )
-      |> initialize()
+      |> initialize_conversation()
 
     {:ok, socket}
   end
 
-  defp initialize(socket) do
+  defp initialize_conversation(socket) do
     assign(socket,
       events: [],
+      id: generate_conversation_id(),
       current_input: "",
       is_loading: false
     )
+  end
+
+  defp generate_conversation_id do
+    UUID.uuid4()
   end
 
   @impl true
@@ -48,9 +55,10 @@ defmodule LlmChatWeb.PageLive do
 
       <.toolbar model_id={@model_id} tools={@tools} phx_change="update_model"/>
 
-      <div class="flex flex-col w-2/5 h-screen bg-gray-100">
+      <div class="flex flex-col w-1/5 h-screen bg-gray-200">
         <div class="flex-grow p-4 overflow-y-auto space-y-4">
-          <h1 class="text-xl font-bold text-gray-800 mb-4">Agents</h1>
+          <h1 class="text-xl font-bold text-gray-800 mb-4">Conversations</h1>
+          <.history conversations={@history}/>
         </div>
       </div>
 
@@ -106,7 +114,7 @@ defmodule LlmChatWeb.PageLive do
   @impl true
   def handle_event("reset", _params, socket) do
     Logger.debug("Resetting the chat")
-    socket = initialize(socket)
+    socket = initialize_conversation(socket)
     {:noreply, socket}
   end
 
@@ -117,7 +125,7 @@ defmodule LlmChatWeb.PageLive do
     if trimmed_input == "" or socket.assigns.is_loading do
       {:noreply, socket}
     else
-      new_messages = socket.assigns.events ++ [%{role: :user, content: trimmed_input}]
+      new_messages = socket.assigns.events ++ [%{"role" => "user", "content" => trimmed_input}]
 
       # Mettre à jour l'UI immédiatement avec le message utilisateur
       socket =
@@ -129,10 +137,8 @@ defmodule LlmChatWeb.PageLive do
 
       bedrock_messages =
         new_messages
-        |> Enum.filter(fn msg -> msg.role != :thought end)
-        |> Enum.map(fn msg ->
-          %{role: Atom.to_string(msg.role), content: msg.content}
-        end)
+        |> Enum.filter(fn msg -> msg["role"] != "thought" end)
+
 
       Bedrock.invoke(
         self(),
@@ -147,13 +153,29 @@ defmodule LlmChatWeb.PageLive do
   end
 
   @impl true
+  def handle_event("load_conversation", %{"id" => id}, socket) do
+    case Map.get(socket.assigns.history, id) do
+      nil ->
+        {:noreply, socket}  # Conversation non trouvée, ne rien faire
+      conversation ->
+        socket = assign(socket, events: conversation, id: id, is_loading: false, current_input: "")
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_info({:bedrock_response, response_data}, socket) do
-    events = socket.assigns.events ++ [%{role: :assistant, content: response_data.content}]
+    events = socket.assigns.events ++ [response_data]
 
     socket =
       assign(socket,
         events: events,
         is_loading: false
+      )
+
+    socket =
+      assign(socket,
+        history: Llm.History.save_conversation(socket.assigns.history, socket.assigns.id, socket.assigns.events)
       )
 
     {:noreply, socket}
@@ -191,6 +213,11 @@ defmodule LlmChatWeb.PageLive do
       assign(socket,
         events: events,
         is_loading: false
+      )
+
+    socket =
+      assign(socket,
+        history: Llm.History.save_conversation(socket.assigns.history, socket.assigns.id, socket.assigns.events)
       )
 
     {:noreply, socket}
