@@ -55,12 +55,7 @@ defmodule LlmChatWeb.PageLive do
 
       <.toolbar model_id={@model_id} tools={@tools} phx_change="update_model"/>
 
-      <div class="flex flex-col w-1/5 h-screen bg-gray-200">
-        <div class="flex-grow p-4 overflow-y-auto space-y-4">
-          <h1 class="text-xl font-bold text-gray-800 mb-4">Conversations</h1>
-          <.history conversations={@history}/>
-        </div>
-      </div>
+      <.history conversations={@history} id={@id}/>
 
       <.conversation
         events={@events}
