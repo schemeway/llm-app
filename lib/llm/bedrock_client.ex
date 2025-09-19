@@ -157,7 +157,7 @@ defmodule Llm.BedrockClient do
           else: %{}
       )
 
-    Logger.debug("Bedrock request data: #{inspect(data)}")
+    Logger.debug("Bedrock request data:\n#{Jason.encode!(data, pretty: true)}")
 
     %ExAws.Operation.JSON{
       http_method: :post,
