@@ -21,7 +21,7 @@ defmodule Llm.ModelRegistry do
       %Model{name: "Claude 3.7 Sonnet - CRI", id: "us.anthropic.claude-3-7-sonnet-20250219-v1:0", rate: 4},
       %Model{name: "Claude 4 Sonnet - CRI US", id: "us.anthropic.claude-sonnet-4-20250514-v1:0", rate: 2},
       %Model{name: "Claude 4 Sonnet - CRI EU", id: "eu.anthropic.claude-sonnet-4-20250514-v1:0", rate: 2},
-      %Model{name: "Claude 4 Opus - CRI", id: "us.anthropic.claude-opus-4-20250514-v1:0", rate: 2},
+      %Model{name: "Claude 4.5 Sonnet - CRI", id: "global.anthropic.claude-sonnet-4-5-20250929-v1:0", rate: 2},
       %Model{name: "Llama 4 Scout 17B", id: "us.meta.llama4-scout-17b-instruct-v1:0", rate: 20},
       %Model{name: "Llama 4 Maverick 17B", id: "us.meta.llama4-maverick-17b-instruct-v1:0", rate: 20},
       %Model{name: "DeepSeek R1 - CRI", id: "us.deepseek.r1-v1:0", rate: 20}
