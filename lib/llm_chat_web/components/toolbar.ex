@@ -87,7 +87,7 @@ defmodule LlmChatWeb.Component.Toolbar do
           <.tool_list tools={@tools} />
         </form>
 
-        <div class="p-4">
+        <div class="p-4 grid place-items-end">
           <.reset_button />
         </div>
 
