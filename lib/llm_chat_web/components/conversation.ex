@@ -51,8 +51,9 @@ defmodule LlmChatWeb.Component.Conversation do
   def send_button(assigns) do
     ~H"""
       <div class="p-4 border-t border-gray-300 bg-white inset-x-0 bottom-0">
-        <form phx-submit="send_message" phx-change="update_input" class="flex space-x-2">
-          <input
+        <form phx-submit="send_message" phx-change="update_input" class="flex place-items-end space-x-2">
+          <textarea
+            style="field-sizing: content; min-height: 4rem; resize: none;"
             type="text"
             name="message"
             value={@current_input}
@@ -63,7 +64,7 @@ defmodule LlmChatWeb.Component.Conversation do
           />
           <button
             type="submit"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50;"
             disabled={@is_loading or String.trim(@current_input) == ""}
           >
             Send
