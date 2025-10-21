@@ -13,16 +13,13 @@ defmodule Llm.BedrockClient do
   end
 
   defp notify_thoughts(caller_pid, thought) do
-    send(caller_pid, {:bedrock_tool_use_only, %{"role" => "thought", "content" => thought}})
+    send(caller_pid, {:llm_tool_use_only, %{"role" => "thought", "content" => thought}})
   end
 
   defp notify_answer(caller_pid, message) do
-    send(caller_pid, {:bedrock_response, %{"role" => "assistant", "content" => message}})
+    send(caller_pid, {:llm_response, %{"role" => "assistant", "content" => message}})
   end
 
-  @spec invoke(any(), any(), any(), any(), [
-          %{:content => any(), :role => <<_::32, _::_*40>>, optional(any()) => any()}
-        ]) :: any()
   def invoke(caller_pid, model, system_prompt, tools, messages) do
     create_context(caller_pid, model, system_prompt, tools)
     |> add_messages(messages)
@@ -123,9 +120,9 @@ defmodule Llm.BedrockClient do
     result = run_tool(context, tool_use)
 
     notify_thoughts(context.caller_pid, %{
-      text: false,
-      name: tool_use["toolUse"]["name"],
-      input: Jason.encode!(tool_use["toolUse"]["input"])
+      "text" => false,
+      "name" => tool_use["toolUse"]["name"],
+      "input" => Jason.encode!(tool_use["toolUse"]["input"])
     })
 
     process_tool_use(rest, context, tool_results ++ [result])

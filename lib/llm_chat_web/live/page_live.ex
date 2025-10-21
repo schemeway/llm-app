@@ -2,11 +2,11 @@ defmodule LlmChatWeb.PageLive do
   use LlmChatWeb, :live_view
   require Logger
 
-  # Module à créer pour l'interaction Bedrock
-  alias Llm.Bedrock
   import LlmChatWeb.Component.Toolbar, only: [toolbar: 1]
   import LlmChatWeb.Component.Conversation, only: [conversation: 1]
   import LlmChatWeb.Component.History, only: [history: 1]
+
+  @platform Llm.Bedrock
 
   @system_prompt """
     You are an intelligent assistant. To answer the user's question, you can use the tools provided. Think step by step and
@@ -130,17 +130,17 @@ defmodule LlmChatWeb.PageLive do
           is_loading: true
         )
 
-      bedrock_messages =
+      messages =
         new_messages
         |> Enum.filter(fn msg -> msg["role"] != "thought" end)
 
 
-      Bedrock.invoke(
+      @platform.invoke(
         self(),
         socket.assigns.model_id,
         socket.assigns.system_prompt,
         socket.assigns.tools,
-        bedrock_messages
+        messages
       )
 
       {:noreply, socket}
@@ -159,7 +159,7 @@ defmodule LlmChatWeb.PageLive do
   end
 
   @impl true
-  def handle_info({:bedrock_response, response_data}, socket) do
+  def handle_info({:llm_response, response_data}, socket) do
     events = socket.assigns.events ++ [response_data]
 
     socket =
@@ -189,8 +189,8 @@ defmodule LlmChatWeb.PageLive do
   end
 
   @impl true
-  def handle_info({:bedrock_error, error_details}, socket) do
-    IO.inspect(error_details, label: "Bedrock Error")
+  def handle_info({:llm_error, error_details}, socket) do
+    IO.inspect(error_details, label: "LLM Error")
     # Ajouter un message d'erreur à l'interface si désiré
     events =
       socket.assigns.events ++
@@ -201,7 +201,7 @@ defmodule LlmChatWeb.PageLive do
   end
 
   @impl true
-  def handle_info({:bedrock_tool_use_only, response_data}, socket) do
+  def handle_info({:llm_tool_use_only, response_data}, socket) do
     events = socket.assigns.events ++ [response_data]
 
     socket =
