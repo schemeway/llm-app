@@ -34,9 +34,9 @@ defmodule LlmChatWeb.Component.Conversation do
 
   def event(%{event: %{"role" => "assistant"}} = assigns) do
     ~H"""
-    <div class="flex justify-start">
-      <div class="max-w-xl px-4 py-2 rounded-lg bg-gray-50 text-gray-800">
-        <%= {:safe, Earmark.as_html!(@event["content"], escape: true, inner_html: true)} %>
+    <div class="flex justify-start text-justify">
+      <div class="max-w-xl px-4 py-2 rounded-lg bg-gray-50 text-gray-800 assistant">
+        <%= {:safe, Earmark.as_html!(@event["content"], escape: true)} %>
       </div>
     </div>
     """
