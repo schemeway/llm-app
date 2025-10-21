@@ -1,6 +1,28 @@
 defmodule LlmChatWeb.Component.Toolbar do
   use Phoenix.Component
 
+  attr :platform, :string, required: true
+  def platform_dropdown(assigns) do
+    platform_name = assigns.platform.name()
+
+    ~H"""
+      <select
+        name="platform"
+        id="platform"
+        phx-change="update_platform"
+        class="w-full mb-3 px-3 py-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-500"
+      >
+        <option :for={platform <- Llm.PlatformRegistry.list_platforms()}
+          value={platform}
+          selected={platform_name == platform}>
+          <%= String.capitalize(platform) %>
+        </option>
+      </select>
+    """
+  end
+
+  attr :model_id, :string, required: true
+  attr :platform, :any, required: true
   def models_dropdown(assigns) do
     ~H"""
       <select
@@ -9,7 +31,7 @@ defmodule LlmChatWeb.Component.Toolbar do
         phx-change="update_model"
         class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:ring-blue-500"
       >
-        <option :for={model <- Llm.ModelRegistry.list_models()}
+        <option :for={model <- @platform.get_models()}
           value={model.id}
           selected={model.id == @model_id}>
           <%= model.name %>
@@ -70,6 +92,7 @@ defmodule LlmChatWeb.Component.Toolbar do
   end
 
 
+  attr :platform, :atom, required: true
   attr :model_id, :string, required: true
   attr :phx_change, :string, required: true
   attr :tools, :list, default: []
@@ -80,7 +103,9 @@ defmodule LlmChatWeb.Component.Toolbar do
         <form phx-submit="{@phx_change}" class="p-4 h-dvh overflow-y-auto">
           <.section title="Model" />
 
-          <.models_dropdown model_id={@model_id} />
+          <.platform_dropdown platform={@platform} />
+
+          <.models_dropdown model_id={@model_id} platform={@platform}/>
 
           <.section title="Tools" />
 

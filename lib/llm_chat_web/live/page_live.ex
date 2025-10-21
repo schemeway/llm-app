@@ -5,8 +5,7 @@ defmodule LlmChatWeb.PageLive do
   import LlmChatWeb.Component.Toolbar, only: [toolbar: 1]
   import LlmChatWeb.Component.Conversation, only: [conversation: 1]
   import LlmChatWeb.Component.History, only: [history: 1]
-
-  @platform Llm.Bedrock
+  alias Llm.PlatformRegistry
 
   @system_prompt """
     You are an intelligent assistant. To answer the user's question, you can use the tools provided. Think step by step and
@@ -18,17 +17,21 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    default_model = Llm.ModelRegistry.list_models() |> List.first() |> Map.get(:id)
+    platform = PlatformRegistry.default_platform()
+    model_id = default_model_id(platform)
+    tool_names = Tools.ToolRegistry.get_all_tools() |> Enum.map(& &1.name())
+    history = Llm.History.read_history()
 
     socket =
       assign(socket,
         system_prompt: @system_prompt,
-        model_id: default_model,
-        tools: Tools.ToolRegistry.get_all_tools() |> Enum.map(& &1.name()),
+        model_id: model_id,
+        tools: tool_names,
         total_tokens: 0,
         input_tokens: 0,
         output_tokens: 0,
-        history: Llm.History.read_history()
+        platform: platform,
+        history: history
       )
       |> initialize_conversation()
 
@@ -46,6 +49,12 @@ defmodule LlmChatWeb.PageLive do
 
   defp generate_conversation_id do
     UUID.uuid4()
+  end
+
+  defp default_model_id(platform) do
+    platform.get_models()
+    |> List.first()
+    |> Map.get(:id)
   end
 
   @impl true
@@ -66,7 +75,7 @@ defmodule LlmChatWeb.PageLive do
         total_tokens={@total_tokens}
       />
 
-      <.toolbar model_id={@model_id} tools={@tools} phx_change="update_model"/>
+      <.toolbar platform={@platform} model_id={@model_id} tools={@tools} phx_change="update_model"/>
 
 
     </div>
@@ -78,6 +87,17 @@ defmodule LlmChatWeb.PageLive do
   @impl true
   def handle_event("update_input", %{"message" => input}, socket) do
     {:noreply, assign(socket, :current_input, input)}
+  end
+
+  @impl true
+  def handle_event("update_platform", %{"platform" => platform_name}, socket) do
+    Logger.debug("Updating platform to: #{platform_name}")
+
+    platform = PlatformRegistry.get_platform(platform_name)
+    model_id = default_model_id(platform)
+
+    socket = assign(socket, platform: platform, model_id: model_id)
+    {:noreply, socket}
   end
 
   @impl true
@@ -135,7 +155,8 @@ defmodule LlmChatWeb.PageLive do
         |> Enum.filter(fn msg -> msg["role"] != "thought" end)
 
 
-      @platform.invoke(
+      platform = socket.assigns.platform
+      platform.invoke(
         self(),
         socket.assigns.model_id,
         socket.assigns.system_prompt,

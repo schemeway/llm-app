@@ -1,8 +1,16 @@
 defmodule Llm.Ollama do
   alias Llm.OllamaClient
+  alias Llm.Model
   use GenServer
 
   require Logger
+
+  def name, do: "ollama"
+  def get_models do
+    [
+      %Model{name: "Qwen 3 (0.6b) - default", id: "qwen3:0.6b", rate: 15}
+    ]
+  end
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
