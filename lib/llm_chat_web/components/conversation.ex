@@ -1,13 +1,22 @@
 defmodule LlmChatWeb.Component.Conversation do
+  require Logger
   use Phoenix.Component
 
-  def event(%{event: %{"role" => "thought"}} = assigns) do
+  defp format_input(nil), do: "nil"
+  defp format_input(input) when is_binary(input) do
+    input
+  end
+  defp format_input(input) when is_map(input) or is_list(input) do
+    Jason.encode!(input)
+  end
+
+  def event(%{event: %{"role" => "thought", "content" => content}} = assigns) do
     ~H"""
     <div class="p-3 mx-[50px] rounded-lg bg-indigo-900 text-white shadow">
-      <%= if @event["content"]["text"] do %>
-        <p class="font-mono text-xs break-words"><%= @event["content"]["text"] %></p>
+      <%= if content["text"] do %>
+        <p class="font-mono text-xs break-words"><%= content["text"] %></p>
       <% else %>
-        <p class="text-xs text-indigo-300 mt-1">Tool: <%= @event["content"]["name"] %>, input: <%= @event["content"]["input"] %></p>
+        <p class="text-xs text-indigo-300 mt-1">Tool: <%= content["name"] %>, input: <%= format_input(content["input"]) %></p>
       <% end %>
     </div>
     """
@@ -48,12 +57,12 @@ defmodule LlmChatWeb.Component.Conversation do
     """
   end
 
-  def send_button(assigns) do
+  def message(assigns) do
     ~H"""
       <div class="p-4 border-t border-gray-300 bg-white inset-x-0 bottom-0">
         <form phx-submit="send_message" phx-change="update_input" class="flex place-items-end space-x-2">
           <textarea
-            style="field-sizing: content; min-height: 4rem; resize: none;"
+            style="field-sizing: content; min-height: 4rem; max-height: 10rem; resize: none;"
             type="text"
             name="message"
             value={@current_input}
@@ -81,6 +90,8 @@ defmodule LlmChatWeb.Component.Conversation do
           <span class="text-sm font-medium text-gray-600">
             <span class="font-bold text-indigo-700">Tokens used : <%= @total_tokens %>
             (input: <%= @input_tokens %>, output: <%= @output_tokens %>)</span>
+            |
+            <span class="font-bold"> Region: <%= System.get_env("AWS_REGION") || "ca-central-1" %></span>
           </span>
         </div>
 
@@ -91,7 +102,7 @@ defmodule LlmChatWeb.Component.Conversation do
         <.cues is_loading={@is_loading} events={@events} />
       </div>
 
-      <.send_button
+      <.message
         current_input={@current_input}
         is_loading={@is_loading}
         phx-change="update_input"
