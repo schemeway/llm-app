@@ -12,6 +12,8 @@ defmodule Tools.ToolRegistry do
 
   defp default_tools do
     [
+      Tools.Calculator,
+      Tools.CurrencyRate,
       Tools.Dir.DirReader,
       Tools.Dir.DirCreator,
       Tools.Dir.DirChanger,
