@@ -6,7 +6,8 @@ defmodule Llm.Context do
     tools: [],
     process_tool_use: true,
     caller_pid: nil,
-    system_prompt: nil
+    system_prompt: nil,
+    client: nil
   ]
 
   def new(model_id, system_prompt, caller_pid: caller_pid, tools: tools, process_tools?: process_tools?) do
@@ -15,6 +16,18 @@ defmodule Llm.Context do
       messages: [],
       tools: tools || nil,
       caller_pid: caller_pid,
+      process_tool_use: process_tools? && true,
+      system_prompt: system_prompt
+    }
+  end
+
+  def new(client, model_id, system_prompt, caller_pid: caller_pid, tools: tools, process_tools?: process_tools?) do
+    %__MODULE__{
+      model_id: model_id,
+      messages: [],
+      tools: tools || nil,
+      caller_pid: caller_pid,
+      client: client,
       process_tool_use: process_tools? && true,
       system_prompt: system_prompt
     }

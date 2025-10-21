@@ -60,6 +60,7 @@ defmodule LlmChat.MixProject do
       {:req, "~> 0.5.0"},
       {:uuid, "~> 1.1"},
       {:ex_aws_bedrock, "~> 2.5.0"},
+      {:ollama, "0.9.0"},
 
     ]
   end
