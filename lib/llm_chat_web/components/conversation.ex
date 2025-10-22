@@ -70,13 +70,16 @@ defmodule LlmChatWeb.Component.Conversation do
             class="flex-grow px-3 py-2  border-transparent resize-none rounded-md focus:border-transparent focus:ring-0"
             autocomplete="off"
             phx-debounce="200"
+            phx-window-keydown="send_message"
+            phx-key="Enter"
+            phx-key-modifiers={["ctrl"]}
           />
           <button
             type="submit"
             class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50;"
             disabled={@is_loading or String.trim(@current_input) == ""}
           >
-            Send
+        Send
           </button>
         </form>
       </div>

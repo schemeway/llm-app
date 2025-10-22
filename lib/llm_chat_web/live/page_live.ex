@@ -134,7 +134,8 @@ defmodule LlmChatWeb.PageLive do
   end
 
   @impl true
-  def handle_event("send_message", %{"message" => user_input}, socket) do
+  def handle_event("send_message", message, socket) do
+    user_input = extract_user_input(message)
     trimmed_input = String.trim(user_input)
 
     if trimmed_input == "" or socket.assigns.is_loading do
@@ -167,6 +168,9 @@ defmodule LlmChatWeb.PageLive do
       {:noreply, socket}
     end
   end
+
+  defp extract_user_input(%{"message" => message}), do: message
+  defp extract_user_input(%{"key" => "Enter", "value" => message}), do: message
 
   @impl true
   def handle_event("load_conversation", %{"id" => id}, socket) do
