@@ -112,7 +112,7 @@ defmodule Llm.BedrockClient do
   end
 
   defp process_tool_use([%{"text" => text} | rest], context, tool_results) do
-    notify_thoughts(context.caller_pid, %{text: text})
+    notify_thoughts(context.caller_pid, %{"text" => text})
     process_tool_use(rest, context, tool_results)
   end
 
