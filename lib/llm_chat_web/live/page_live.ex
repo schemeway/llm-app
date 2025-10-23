@@ -200,7 +200,7 @@ defmodule LlmChatWeb.PageLive do
         events: events,
         is_loading: false
       )
-      |> push_event("phx:focus_input", %{selector: "#message_input"})
+      |> push_event("focus_input", %{selector: "#message_input"})
 
     socket =
       assign(socket,

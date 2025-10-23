@@ -81,15 +81,8 @@ defmodule LlmChatWeb.Component.Conversation do
             phx-debounce="200"
             disabled={@is_loading}
           />
-          <button
-            type="submit"
-            id="send-button"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50;"
-            disabled={@is_loading or String.trim(@current_input) == ""}
-          >Send</button>
           <script>
             const textarea = document.getElementById("message-input");
-            const sendButton = document.getElementById("send-button");
             const form = document.getElementById("message-form");
 
             document.addEventListener("DOMContentLoaded", function() {
@@ -99,12 +92,12 @@ defmodule LlmChatWeb.Component.Conversation do
             document.addEventListener("keydown", function(event) {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
-                sendButton.focus();
+                form.focus();
                 form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
               }
             });
 
-            window.addEventListener("phx:phx:focus_input", () => {
+            window.addEventListener("phx:focus_input", () => {
               textarea.focus();
             });
           </script>
