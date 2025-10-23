@@ -102,13 +102,8 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def handle_event("update_model", %{"model_id" => model_id}, socket) do
-    if Llm.ModelRegistry.list_models()
-       |> Enum.find(fn model -> model.id == model_id end) do
-      socket = assign(socket, model_id: model_id)
-      {:noreply, socket}
-    else
-      {:noreply, socket}
-    end
+    socket = socket |> assign(:model_id, model_id)
+    {:noreply, socket}
   end
 
   @impl true
@@ -205,6 +200,7 @@ defmodule LlmChatWeb.PageLive do
         events: events,
         is_loading: false
       )
+      |> push_event("phx:focus_input", %{selector: "#message_input"})
 
     socket =
       assign(socket,
