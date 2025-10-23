@@ -10,14 +10,22 @@ defmodule LlmChatWeb.Component.Conversation do
     Jason.encode!(input)
   end
 
-  def event(%{event: %{"role" => "thought", "content" => content}} = assigns) do
+  def event(%{event: %{"role" => "thought"}} = assigns) do
     ~H"""
     <div class="p-3 mx-[50px] rounded-lg bg-indigo-900 text-white shadow">
-      <%= if content["text"] do %>
-        <p class="font-mono text-xs break-words"><%= content["text"] %></p>
+      <%= if @event["content"]["text"] do %>
+        <p class="font-mono text-xs break-words"><%= @event["content"]["text"] %></p>
       <% else %>
-        <p class="text-xs text-indigo-300 mt-1">Tool: <%= content["name"] %>, input: <%= format_input(content["input"]) %></p>
+        <p class="text-xs text-indigo-300 mt-1">Tool: <%= @event["content"]["name"] %>, input: <%= format_input(@event["content"]["input"]) %></p>
       <% end %>
+    </div>
+    """
+  end
+
+  def event(%{event: %{"role" => "tool"}} = assigns) do
+    ~H"""
+    <div class="p-3 mx-[50px] rounded-lg bg-indigo-900 text-white shadow">
+      <p class="font-mono text-xs break-words"><%= @event["content"] %></p>
     </div>
     """
   end
@@ -60,27 +68,47 @@ defmodule LlmChatWeb.Component.Conversation do
   def message(assigns) do
     ~H"""
       <div class="p-4 border-t border-gray-300 bg-white inset-x-0 bottom-0">
-        <form phx-submit="send_message" phx-change="update_input" class="flex place-items-end space-x-2">
+        <form phx-submit="send_message" id="message-form" phx-change="update_input" class="flex place-items-end space-x-2">
           <textarea
             style="field-sizing: content; min-height: 4rem; max-height: 10rem; resize: none;"
+            id="message-input"
             type="text"
             name="message"
             value={@current_input}
             placeholder="Type your message..."
-            class="flex-grow px-3 py-2  border-transparent resize-none rounded-md focus:border-transparent focus:ring-0"
+            class="flex-grow px-3 py-2  border-transparent resize-none rounded-md focus:border-transparent focus:ring-0 disabled:opacity-50"
             autocomplete="off"
             phx-debounce="200"
-            phx-window-keydown="send_message"
-            phx-key="Enter"
-            phx-key-modifiers={["ctrl"]}
+            disabled={@is_loading}
           />
           <button
             type="submit"
+            id="send-button"
             class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50;"
             disabled={@is_loading or String.trim(@current_input) == ""}
-          >
-        Send
-          </button>
+          >Send</button>
+          <script>
+            const textarea = document.getElementById("message-input");
+            const sendButton = document.getElementById("send-button");
+            const form = document.getElementById("message-form");
+
+            document.addEventListener("DOMContentLoaded", function() {
+              textarea.focus();
+            });
+
+            document.addEventListener("keydown", function(event) {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendButton.focus();
+                form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+              }
+            });
+
+            window.addEventListener("phx:phx:focus_input", () => {
+              textarea.focus();
+            });
+          </script>
+
         </form>
       </div>
     """
@@ -98,18 +126,14 @@ defmodule LlmChatWeb.Component.Conversation do
           </span>
         </div>
 
-      <div class="flex-grow p-4 overflow-y-auto space-y-4">
-
+      <div id="events" phx-hook="ScrollToBottom" class="flex-grow p-4 overflow-y-auto space-y-4">
         <.event :for={event <- @events} event={event} />
-
         <.cues is_loading={@is_loading} events={@events} />
       </div>
 
       <.message
         current_input={@current_input}
-        is_loading={@is_loading}
-        phx-change="update_input"
-        phx-submit="send_message" />
+        is_loading={@is_loading} />
 
 
     </div>
