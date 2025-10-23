@@ -169,9 +169,6 @@ defmodule LlmChatWeb.PageLive do
     end
   end
 
-  defp extract_user_input(%{"message" => message}), do: message
-  defp extract_user_input(%{"key" => "Enter", "value" => message}), do: message
-
   @impl true
   def handle_event("load_conversation", %{"id" => id}, socket) do
     case Map.get(socket.assigns.history, id) do
@@ -182,6 +179,22 @@ defmodule LlmChatWeb.PageLive do
         {:noreply, socket}
     end
   end
+
+  @impl true
+  def handle_event("delete_conversation", %{"id" => id}, socket) do
+    new_history = Llm.History.delete_conversation(socket.assigns.history, id)
+    socket = assign(socket, history: new_history)
+
+    if socket.assigns.id == id do
+      socket = initialize_conversation(socket)
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp extract_user_input(%{"message" => message}), do: message
+  defp extract_user_input(%{"key" => "Enter", "value" => message}), do: message
 
   @impl true
   def handle_info({:llm_response, response_data}, socket) do

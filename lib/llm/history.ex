@@ -9,6 +9,14 @@ defmodule Llm.History do
     Map.put(history, id, messages)
   end
 
+  def delete_conversation(history, id) do
+    dir = get_history_path()
+    file_path = Path.join(dir, "#{id}")
+    File.rm!(file_path)
+
+    Map.delete(history, id)
+  end
+
   def read_history do
     dir = get_history_path()
 
