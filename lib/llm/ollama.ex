@@ -6,10 +6,9 @@ defmodule Llm.Ollama do
   require Logger
 
   def name, do: "ollama"
+
   def get_models do
-    [
-      %Model{name: "Qwen 3 (0.6b) - default", id: "qwen3:0.6b", rate: 15}
-    ]
+    GenServer.call(__MODULE__, :get_models)
   end
 
   def start_link(_) do
@@ -22,8 +21,14 @@ defmodule Llm.Ollama do
 
   @impl true
   def init(:ok) do
-    # Initialize the Ollama client here if needed
-    {:ok, %{client: Ollama.init()}}
+    client = Ollama.init()
+    models = retrieve_models(client)
+    {:ok, %{client: client, models: models}}
+  end
+
+  @impl true
+  def handle_call(:get_models, _from, %{models: models} = state) do
+    {:reply, models, state}
   end
 
   @impl true
@@ -43,4 +48,17 @@ defmodule Llm.Ollama do
     {:noreply, socket}
   end
 
+
+  defp retrieve_models(client) do
+    case Ollama.list_models(client) do
+      {:ok, %{"models" => models}} ->
+        for %{"name" => name, "model" => id} <- models do
+          %Model{name: name, id: id, rate: 100}
+        end
+
+      {:error, reason} ->
+        Logger.error("Erreur lors de la récupération des modèles Ollama: #{inspect(reason)}")
+        []
+    end
+  end
 end
