@@ -1,12 +1,16 @@
 defmodule Llm.OllamaClient do
   require Logger
 
-  alias Llm.{Message, Context}
+  alias Llm.Context
   alias Tools.Tool
 
 
   defp notify_thoughts(caller_pid, thought) do
     send(caller_pid, {:llm_tool_use_only, %{"role" => "thought", "content" => thought}})
+  end
+
+  defp notify_tool_use(caller_pid, tool_use) do
+    send(caller_pid, {:llm_tool_use_only, %{"role" => "tool", "content" => tool_use}})
   end
 
   defp notify_answer(caller_pid, message) do
@@ -45,6 +49,12 @@ defmodule Llm.OllamaClient do
     |> add_messages(messages)
   end
 
+  defp add_messages(context, [%{"role" => "tool", "content" => message} | messages]) do
+    context
+    |> Context.add_message(%{role: "tool", content: message})
+    |> add_messages(messages)
+  end
+
   defp send_request(context) do
     Logger.debug(context.messages)
 
@@ -75,7 +85,11 @@ defmodule Llm.OllamaClient do
       ) do
     if context.process_tool_use do
       Logger.debug("Tool use: #{inspect(tool_calls)}")
-      context = Context.add_message(context, message)
+      context = Context.add_message(context, %{
+        role: message["role"],
+        content: message["content"],
+        tool_calls: message["tool_calls"]
+      })
       process_tool_use(tool_calls, context)
     else
       content
@@ -107,12 +121,14 @@ defmodule Llm.OllamaClient do
     result = run_tool(context, tool_use)
 
     notify_thoughts(context.caller_pid, %{
-      text: false,
-      name: tool_use["name"],
-      input: tool_use["arguments"]
+      "text" => false,
+      "name" => tool_use["name"],
+      "input" => tool_use["arguments"]
     })
 
-    context = Context.add_message(context, result)
+    notify_tool_use(context.caller_pid, result["content"])
+
+    context = Context.add_message(context, %{role: result["role"], content: result["content"]})
     process_tool_use(rest, context)
   end
 
@@ -129,9 +145,9 @@ defmodule Llm.OllamaClient do
     case tool.call(input) do
       %{"result" => result} ->
         Logger.debug("Tool #{tool_name} returned result: #{inspect(result)}")
-        %{role: "tool", content: "#{result}"}
-      %{error: error} ->
-        %{role: "tool", content: "Error: #{error}"}
+        %{"role" => "tool", "content" => "#{result}"}
+      %{"error" => error} ->
+        %{"role" => "tool", "content" => "Error: #{error}"}
     end
   end
 
