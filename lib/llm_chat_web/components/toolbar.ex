@@ -3,7 +3,7 @@ defmodule LlmChatWeb.Component.Toolbar do
 
   attr :platform, :string, required: true
   def platform_dropdown(assigns) do
-    platform_name = assigns.platform.name()
+    assigns = assign(assigns, :platform_name, assigns.platform.name())
 
     ~H"""
       <select
@@ -14,7 +14,7 @@ defmodule LlmChatWeb.Component.Toolbar do
       >
         <option :for={platform <- Llm.PlatformRegistry.list_platforms()}
           value={platform}
-          selected={platform_name == platform}>
+          selected={@platform_name == platform}>
           <%= String.capitalize(platform) %>
         </option>
       </select>
