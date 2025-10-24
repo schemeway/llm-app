@@ -1,7 +1,7 @@
 defmodule Llm.BedrockClient do
   require Logger
 
-  alias Llm.{Message, Context}
+  alias Llm.{Bedrock, Context, Message}
   alias Tools.Tool
 
 
@@ -72,10 +72,8 @@ defmodule Llm.BedrockClient do
   defp invoke_bedrock(context) do
     Logger.debug("Invoking Bedrock with model: #{context.model_id}")
 
-    region = System.get_env("AWS_REGION") || "ca-central-1"
-
     converse(context.model_id, context.messages, context.system_prompt, context.tools)
-    |> ExAws.request(service_override: :bedrock, region: region)
+    |> ExAws.request(service_override: :bedrock, region: Bedrock.get_region())
   end
 
   defp process_response(

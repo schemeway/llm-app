@@ -6,6 +6,11 @@ defmodule Llm.Bedrock do
   require Logger
 
   def name, do: "bedrock"
+
+  def get_region do
+    System.get_env("AWS_REGION") || "ca-central-1"
+  end
+
   def get_models do
     [
       %Model{name: "Nova Micro - default", id: "amazon.nova-micro-v1:0", rate: 10},
