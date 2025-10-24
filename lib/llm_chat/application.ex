@@ -15,7 +15,6 @@ defmodule LlmChat.Application do
       {Phoenix.PubSub, name: LlmChat.PubSub},
       Llm.Bedrock,
       Llm.Ollama,
-      Llm.ModelRegistry,
       Tools.ToolRegistry,
       # Start the Finch HTTP client for sending emails
       {Finch, name: LlmChat.Finch},
