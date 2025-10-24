@@ -11,6 +11,11 @@ defmodule Llm.Ollama do
     GenServer.call(__MODULE__, :get_models)
   end
 
+  def get_default_model_id do
+    default_model = get_models() |> List.first() |> Map.get(:id)
+    Application.get_env(:llm_chat, :default_ollama_model, default_model)
+  end
+
   def start_link(_) do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end

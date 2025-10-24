@@ -20,7 +20,7 @@ defmodule LlmChatWeb.PageLive do
   @impl true
   def mount(_params, _session, socket) do
     platform = PlatformRegistry.default_platform()
-    model_id = default_model_id(platform)
+    model_id = platform.get_default_model_id()
     tool_names = ToolRegistry.get_tool_names()
     history = History.read_history()
 
@@ -51,12 +51,6 @@ defmodule LlmChatWeb.PageLive do
 
   defp generate_conversation_id do
     UUID.uuid4()
-  end
-
-  defp default_model_id(platform) do
-    platform.get_models()
-    |> List.first()
-    |> Map.get(:id)
   end
 
   @impl true
@@ -96,7 +90,7 @@ defmodule LlmChatWeb.PageLive do
     Logger.debug("Updating platform to: #{platform_name}")
 
     platform = PlatformRegistry.get_platform(platform_name)
-    model_id = default_model_id(platform)
+    model_id = platform.get_default_model_id()
 
     socket = assign(socket, platform: platform, model_id: model_id)
     {:noreply, socket}

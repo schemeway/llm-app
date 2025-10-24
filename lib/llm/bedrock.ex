@@ -15,6 +15,10 @@ defmodule Llm.Bedrock do
     GenServer.call(__MODULE__, :get_models)
   end
 
+  def get_default_model_id do
+    Application.get_env(:llm_chat, :default_bedrock_model, "anthropic-claude-haiku-4-5-20251001-v1:0")
+  end
+
   def start_link(_) do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
@@ -60,7 +64,7 @@ defmodule Llm.Bedrock do
       |> ExAws.request(region: get_region())
 
     case response do
-      {:ok, %{"modelSummaries" => models}} -> models
+      {:ok, %{"modelSummaries" => models}} ->
         for %{"modelId" => id, "modelName" => name, "inferenceTypesSupported" => inference_types} <- models, "ON_DEMAND" in inference_types do
           Logger.info("Found Bedrock model: #{name} (ID: #{id})")
           %Model{name: name, id: id, rate: 2}
