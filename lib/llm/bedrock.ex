@@ -84,7 +84,7 @@ defmodule Llm.Bedrock do
       {:ok, %{"inferenceProfileSummaries" => profiles}} ->
         for %{"inferenceProfileName" => name, "inferenceProfileId" => id} <- profiles do
           Logger.info("Found Bedrock inference profile: #{name} (Model ID: #{id})")
-          %Model{name: name, id: id, rate: 5}
+          %Model{name: name, id: id, rate: 125}
         end
       _ ->
         Logger.error("Erreur lors de la récupération des profils d'inférence Bedrock: #{inspect(response)}")
