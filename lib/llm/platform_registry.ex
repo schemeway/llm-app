@@ -13,6 +13,6 @@ defmodule Llm.PlatformRegistry do
   end
 
   def default_platform do
-    Llm.Bedrock
+    Application.get_env(:llm_chat, :default_platform, Llm.Bedrock)
   end
 end
