@@ -31,6 +31,11 @@ defmodule Tools.ToolRegistry do
     Agent.get(__MODULE__, fn tools -> tools end)
   end
 
+  def get_tool_names do
+    get_all_tools()
+    |> Enum.map(& &1.name())
+  end
+
   def register_tool(tool) do
     Agent.update(__MODULE__, fn tools -> [tool | tools] end)
   end

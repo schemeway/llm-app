@@ -5,7 +5,9 @@ defmodule LlmChatWeb.PageLive do
   import LlmChatWeb.Component.Toolbar, only: [toolbar: 1]
   import LlmChatWeb.Component.Conversation, only: [conversation: 1]
   import LlmChatWeb.Component.History, only: [history: 1]
+  alias Llm.History
   alias Llm.PlatformRegistry
+  alias Tools.ToolRegistry
 
   @system_prompt """
     You are an intelligent assistant. To answer the user's question, you can use the tools provided. Think step by step and
@@ -19,8 +21,8 @@ defmodule LlmChatWeb.PageLive do
   def mount(_params, _session, socket) do
     platform = PlatformRegistry.default_platform()
     model_id = default_model_id(platform)
-    tool_names = Tools.ToolRegistry.get_all_tools() |> Enum.map(& &1.name())
-    history = Llm.History.read_history()
+    tool_names = ToolRegistry.get_tool_names()
+    history = History.read_history()
 
     socket =
       assign(socket,
@@ -177,7 +179,7 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def handle_event("delete_conversation", %{"id" => id}, socket) do
-    new_history = Llm.History.delete_conversation(socket.assigns.history, id)
+    new_history = History.delete_conversation(socket.assigns.history, id)
     socket = assign(socket, history: new_history)
 
     if socket.assigns.id == id do
@@ -204,7 +206,7 @@ defmodule LlmChatWeb.PageLive do
 
     socket =
       assign(socket,
-        history: Llm.History.save_conversation(socket.assigns.history, socket.assigns.id, socket.assigns.events)
+        history: History.save_conversation(socket.assigns.history, socket.assigns.id, socket.assigns.events)
       )
 
     {:noreply, socket}
@@ -242,11 +244,6 @@ defmodule LlmChatWeb.PageLive do
       assign(socket,
         events: events,
         is_loading: false
-      )
-
-    socket =
-      assign(socket,
-        history: Llm.History.save_conversation(socket.assigns.history, socket.assigns.id, socket.assigns.events)
       )
 
     {:noreply, socket}
