@@ -179,11 +179,16 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def handle_event("load_conversation", %{"id" => id}, socket) do
-    case Map.get(socket.assigns.history, id) do
-      nil ->
-        {:noreply, socket}  # Conversation non trouvée, ne rien faire
-      conversation ->
-        socket = assign(socket, events: conversation, id: id, is_loading: false, current_input: "")
+    Logger.debug("Loading conversation: #{id}")
+    conversation = History.load_conversation(id)
+
+    case conversation do
+      {:ok, messages} ->
+        socket = assign(socket, events: messages, id: id, is_loading: false, current_input: "")
+        {:noreply, socket}
+
+      {:error, reason} ->
+        Logger.error("Failed to load conversation #{id}: #{reason}")
         {:noreply, socket}
     end
   end
