@@ -124,6 +124,17 @@ defmodule LlmChatWeb.PageLive do
   end
 
   @impl true
+  def handle_event("enable_all_tools", _params, socket) do
+    all_tools = ToolRegistry.get_tool_names()
+    {:noreply, assign(socket, tools: all_tools)}
+  end
+
+  @impl true
+  def handle_event("disable_all_tools", _params, socket) do
+    {:noreply, assign(socket, tools: [])}
+  end
+
+  @impl true
   def handle_event("reset", _params, socket) do
     Logger.debug("Resetting the chat")
     socket = initialize_conversation(socket)
@@ -226,8 +237,8 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def handle_info({:llm_error, error_details}, socket) do
-    IO.inspect(error_details, label: "LLM Error")
-    # Ajouter un message d'erreur à l'interface si désiré
+    Logger.error("LLM Error received: #{inspect(error_details)}")
+
     events =
       socket.assigns.events ++
         [%{role: :assistant, content: "Désolé, une erreur s'est produite."}]

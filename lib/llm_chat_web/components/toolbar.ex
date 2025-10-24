@@ -109,6 +109,11 @@ defmodule LlmChatWeb.Component.Toolbar do
 
           <.section title="Tools" />
 
+          <div class="mb-2 inline-flex items-center space-x-2">
+            <div phx-click="enable_all_tools" class="px-2 py-1 bg-green-500 text-white text-xs rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500">Enable All</div>
+            <div phx-click="disable_all_tools" class="px-2 py-1 bg-red-500 text-white text-xs rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">Disable All</div>
+          </div>
+
           <.tool_list tools={@tools} />
         </form>
 
