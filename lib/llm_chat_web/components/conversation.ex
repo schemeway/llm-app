@@ -7,7 +7,7 @@ defmodule LlmChatWeb.Component.Conversation do
     input
   end
   defp format_input(input) when is_map(input) or is_list(input) do
-    Jason.encode!(input)
+    Jason.encode!(input, pretty: true, indent: "  ", line_separator: "\n")
   end
 
   def event(%{event: %{"role" => "thought"}} = assigns) do
@@ -16,7 +16,9 @@ defmodule LlmChatWeb.Component.Conversation do
       <%= if @event["content"]["text"] do %>
         <p class="font-mono text-xs break-words"><%= @event["content"]["text"] %></p>
       <% else %>
-        <p class="text-xs text-indigo-300 mt-1">Tool: <%= @event["content"]["name"] %>, input: <%= format_input(@event["content"]["input"]) %></p>
+        <p class="font-mono text-xs text-indigo-300">
+         <strong>Tool:</strong> "<%= @event["content"]["name"] %>" <br/>
+         <strong>Input:</strong> <%= format_input(@event["content"]["input"]) %></p>
       <% end %>
     </div>
     """
@@ -24,8 +26,8 @@ defmodule LlmChatWeb.Component.Conversation do
 
   def event(%{event: %{"role" => "tool"}} = assigns) do
     ~H"""
-    <div class="p-3 mx-[50px] rounded-lg bg-indigo-900 text-white shadow">
-      <p class="font-mono text-xs break-words"><%= @event["content"] %></p>
+    <div class="p-3 mx-[50px] rounded-lg bg-indigo-900 text-indigo-300 shadow text-xs mt-1">
+      <p class="font-mono text-xs break-words"><%= format_input(@event["content"]) %></p>
     </div>
     """
   end

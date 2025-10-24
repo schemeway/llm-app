@@ -16,6 +16,10 @@ defmodule Llm.BedrockClient do
     send(caller_pid, {:llm_tool_use_only, %{"role" => "thought", "content" => thought}})
   end
 
+  defp notify_tool_use(caller_pid, tool_use) do
+    send(caller_pid, {:llm_tool_use_only, %{"role" => "tool", "content" => tool_use}})
+  end
+
   defp notify_answer(caller_pid, message) do
     send(caller_pid, {:llm_response, %{"role" => "assistant", "content" => message}})
   end
@@ -48,6 +52,11 @@ defmodule Llm.BedrockClient do
 
   defp add_messages(context, [%{"role" => "assistant", "content" => message} | messages]) do
     context |> Context.add_message(Message.assistant(message)) |> add_messages(messages)
+  end
+
+  defp add_messages(context, [_ | messages]) do
+    # we just skip the tool calls and results
+    context |> add_messages(messages)
   end
 
   defp send_request(context) do
@@ -122,6 +131,8 @@ defmodule Llm.BedrockClient do
       "name" => tool_use["toolUse"]["name"],
       "input" => Jason.encode!(tool_use["toolUse"]["input"])
     })
+
+    notify_tool_use(context.caller_pid, result)
 
     process_tool_use(rest, context, tool_results ++ [result])
   end
