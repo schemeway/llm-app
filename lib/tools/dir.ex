@@ -6,7 +6,7 @@ defmodule Tools.Dir do
       description: "A tool for creating a directory.",
       parameters: %{
         "dir_path" => %{
-          "type" => "string", 
+          "type" => "string",
           "description" => "the path to the directory to create"
         }
       }
@@ -40,7 +40,7 @@ defmodule Tools.Dir do
 
       case File.ls(dir_path) do
         {:ok, files} ->
-          %{"files" => files}
+          %{"result" => files}
 
         {:error, reason} ->
           Logger.error("Failed to read directory: #{reason}")
