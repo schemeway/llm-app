@@ -80,4 +80,5 @@ config :swoosh, :api_client, false
 config :llm_chat,
   default_bedrock_model: "us.anthropic.claude-haiku-4-5-20251001-v1:0",
   default_ollama_model: "qwen3:0.6b",
+  platforms: [Llm.Bedrock, Llm.Ollama], # or [Llm.Ollama] or [Llm.Bedrock]
   default_platform: Llm.Bedrock # or Llm.Ollama

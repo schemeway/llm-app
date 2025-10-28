@@ -61,9 +61,9 @@ defmodule Llm.Ollama do
           %Model{name: name, id: id, rate: 100}
         end
 
-      {:error, reason} ->
-        Logger.error("Erreur lors de la récupération des modèles Ollama: #{inspect(reason)}")
-        []
+      # {:error, reason} ->
+      #   Logger.error("Erreur lors de la récupération des modèles Ollama: #{inspect(reason)}")
+      #   []
     end
   end
 end

@@ -13,8 +13,7 @@ defmodule LlmChat.Application do
       LlmChatWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:llm_chat, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: LlmChat.PubSub},
-      Llm.Bedrock,
-      Llm.Ollama,
+      Llm.PlatformRegistry,
       Tools.ToolRegistry,
       # Start the Finch HTTP client for sending emails
       {Finch, name: LlmChat.Finch},

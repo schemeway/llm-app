@@ -2,8 +2,6 @@ defmodule Llm.OllamaClient do
   require Logger
 
   alias Llm.Context
-  alias Tools.Tool
-
 
   defp notify_thoughts(caller_pid, thought) do
     send(caller_pid, {:llm_tool_use_only, %{"role" => "thought", "content" => thought}})
