@@ -19,7 +19,12 @@ defmodule Tools.ToolRegistry do
       Tools.Dir.DirChanger,
       Tools.File.FileReader,
       Tools.File.FileWriter,
-      Tools.WebScraper
+      Tools.WebScraper,
+      Tools.Memory.GetKey,
+      Tools.Memory.PutKey,
+      Tools.Memory.ListKeys,
+      Tools.Memory.DeleteKey,
+      Tools.Memory.Clear,
     ]
   end
 
