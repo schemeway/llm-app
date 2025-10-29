@@ -15,6 +15,7 @@ defmodule LlmChat.Application do
       {Phoenix.PubSub, name: LlmChat.PubSub},
       Llm.PlatformRegistry,
       Tools.ToolRegistry,
+      Memory.Store,
       # Start the Finch HTTP client for sending emails
       {Finch, name: LlmChat.Finch},
       # Start a worker by calling: LlmChat.Worker.start_link(arg)

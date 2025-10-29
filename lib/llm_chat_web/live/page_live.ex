@@ -13,8 +13,14 @@ defmodule LlmChatWeb.PageLive do
     You are an intelligent assistant. To answer the user's question, you can use the tools provided. Think step by step and
     verify your answer with the tools.
 
-  When you don't need any information to further process the user's request, just answer by writing
-  Final answer: <answer>
+    If you are not sure about something, make sure to ask for clarification or use the appropriate tool to gather more information.
+
+    You have access to the following information in your memory:
+    {{memory}}
+
+    Before running any tool that modifies the memory, make sure to check with the user if they want to proceed with the change.
+
+    When you don't need any information to further process the user's request, just give your answer directly.
   """
 
   @impl true
@@ -157,12 +163,16 @@ defmodule LlmChatWeb.PageLive do
         new_messages
         |> Enum.filter(fn msg -> msg["role"] != "thought" end)
 
+      memory = Memory.Store.list_keys() |> Enum.join(", ")
+      system_prompt = String.replace(socket.assigns.system_prompt, "{{memory}}", memory)
+
+      Logger.debug("System Prompt: #{system_prompt}")
 
       platform = socket.assigns.platform
       platform.invoke(
         self(),
         socket.assigns.model_id,
-        socket.assigns.system_prompt,
+        system_prompt,
         socket.assigns.tools,
         messages
       )
