@@ -2,6 +2,8 @@ defmodule LlmChatWeb.Component.Conversation do
   require Logger
   use Phoenix.Component
 
+  alias Phoenix.LiveView.JS
+
   defp format_input(nil), do: "nil"
   defp format_input(input) when is_binary(input) do
     input
@@ -109,10 +111,32 @@ defmodule LlmChatWeb.Component.Conversation do
     """
   end
 
+  def system_prompt(assigns) do
+    ~H"""
+    <div class="p-4 border-b border-gray-300 bg-white text-sm text-gray-600">
+      <h3 class="font-bold mb-2">System Prompt:</h3>
+      <pre class="whitespace-pre-wrap"><%= @system_prompt %></pre>
+    </div>
+    """
+  end
+
+  def button(assigns) do
+    ~H"""
+    <button
+      class="shadow-lg px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+      phx-click={@phx_click}>
+      <%= @label %>
+    </button>
+    """
+  end
+
   def conversation(assigns) do
     ~H"""
     <div class="flex flex-col w-3/5 h-screen border-r border-gray-300 bg-gray-50">
-        <div class="p-4 border-b border-gray-300 bg-white text-right">
+        <div class="p-4 border-b border-gray-300 bg-white">
+          <.button phx_click={JS.toggle_class("hidden", to: "#system-prompt")} label="Toggle System Prompt" />
+          <.button phx_click="show_memory" label="Show Memory" />
+
           <span class="text-sm font-medium text-gray-600">
             <span class="font-bold text-indigo-700">Tokens used : <%= @total_tokens %>
             (input: <%= @input_tokens %>, output: <%= @output_tokens %>)</span>
@@ -120,6 +144,10 @@ defmodule LlmChatWeb.Component.Conversation do
             <span class="font-bold"> Region: <%= System.get_env("AWS_REGION") || "ca-central-1" %></span>
           </span>
         </div>
+
+      <div id="system-prompt" class="hidden">
+        <.system_prompt system_prompt={@system_prompt} />
+      </div>
 
       <div id="events" phx-hook="ScrollToBottom" class="flex-grow p-4 overflow-y-auto space-y-4">
         <.event :for={event <- @events} event={event} />
