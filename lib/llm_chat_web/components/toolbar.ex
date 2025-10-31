@@ -77,9 +77,9 @@ defmodule LlmChatWeb.Component.Toolbar do
   def reset_button(assigns) do
     ~H"""
       <button
-        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        class="shadow-lg px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
         phx-click="reset">
-        Reset
+        + New Chat
       </button>
     """
   end
