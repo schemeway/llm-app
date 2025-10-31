@@ -1,5 +1,4 @@
 defmodule Tools.Memory do
-  alias Tools.Memory.Retrieval
   require Logger
 
 
@@ -44,7 +43,7 @@ defmodule Tools.Memory do
       Logger.debug("Saving to memory - key: #{key}")
 
       Memory.Store.put(key, value)
-      %{"success" => true, "message" => "Information saved successfully"}
+      %{"success" => true, "result" => "Information saved successfully"}
     end
   end
 
@@ -63,7 +62,7 @@ defmodule Tools.Memory do
 
       case Memory.Store.delete(key) do
         :ok ->
-          %{"success" => true, "message" => "Key deleted successfully"}
+          %{"success" => true, "result" => "Key deleted successfully"}
 
         {:error, :not_found} ->
           %{"success" => false, "error" => "Key not found in memory"}
@@ -80,7 +79,7 @@ defmodule Tools.Memory do
       Logger.debug("Clearing all memory")
 
       Memory.Store.clear()
-      %{"success" => true, "message" => "All memory cleared successfully"}
+      %{"success" => true, "result" => "All memory cleared successfully"}
     end
   end
 
