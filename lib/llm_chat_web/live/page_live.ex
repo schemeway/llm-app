@@ -75,6 +75,7 @@ defmodule LlmChatWeb.PageLive do
         input_tokens={@input_tokens}
         output_tokens={@output_tokens}
         total_tokens={@total_tokens}
+        system_prompt={@system_prompt}
       />
 
       <.toolbar platform={@platform} model_id={@model_id} tools={@tools} phx_change="update_model"/>
