@@ -1,4 +1,4 @@
-defmodule Llm.BedrockClient do
+defmodule Llm.Bedrock.Client do
   require Logger
 
   alias Llm.{Bedrock, Context, Message}
@@ -63,7 +63,6 @@ defmodule Llm.BedrockClient do
 
     case invoke_bedrock(context) do
       {:ok, response} ->
-        Logger.debug("Response = \n#{inspect(response)}")
         notify_consumption(context.caller_pid, response)
         process_response(response, context)
 
@@ -160,7 +159,7 @@ defmodule Llm.BedrockClient do
       }
       |> Map.merge(if system_prompt, do: %{system: [%{text: system_prompt}]}, else: %{})
       |> Map.merge(
-        if is_list(tools) and not (tools == []),
+        if tools,
           do: %{toolConfig: %{tools: tools |> Enum.map(&Tool.build_tool_spec/1)}},
           else: %{}
       )

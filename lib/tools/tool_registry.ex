@@ -1,6 +1,7 @@
 defmodule Tools.ToolRegistry do
   use GenServer
   require Logger
+
   @moduledoc """
   A registry of tools that can be used by an LLM.
   """
@@ -12,6 +13,7 @@ defmodule Tools.ToolRegistry do
 
   defp default_tools do
     [
+      Tools.AgentCall,
       Tools.Calculator,
       Tools.CurrencyRate,
       Tools.Dir.DirReader,
@@ -24,11 +26,11 @@ defmodule Tools.ToolRegistry do
       Tools.Memory.PutKey,
       Tools.Memory.ListKeys,
       Tools.Memory.DeleteKey,
-      Tools.Memory.Clear,
+      Tools.Memory.Clear
     ]
   end
 
-  def init((init_arg)) do
+  def init(init_arg) do
     {:ok, init_arg}
   end
 
@@ -48,5 +50,4 @@ defmodule Tools.ToolRegistry do
   def get_tool(name) do
     Agent.get(__MODULE__, fn tools -> Enum.find(tools, fn tool -> tool.name() == name end) end)
   end
-
 end

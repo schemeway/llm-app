@@ -8,12 +8,12 @@ defmodule LlmChat.Application do
   @impl true
   @spec start(any(), any()) :: {:error, any()} | {:ok, pid()}
   def start(_type, _args) do
-
     children = [
       LlmChatWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:llm_chat, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: LlmChat.PubSub},
       Llm.PlatformRegistry,
+      {DynamicSupervisor, name: Agents.Registry, strategy: :one_for_one},
       Tools.ToolRegistry,
       Memory.Store,
       # Start the Finch HTTP client for sending emails
@@ -29,7 +29,6 @@ defmodule LlmChat.Application do
     opts = [strategy: :one_for_one, name: LlmChat.Supervisor]
     Supervisor.start_link(children, opts)
   end
-
 
   # Tell Phoenix to update the endpoint configuration
   # whenever the application is updated.

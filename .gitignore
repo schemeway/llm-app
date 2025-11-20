@@ -4,6 +4,7 @@
 /deps
 /doc
 /.fetch
+/priv/models_dev
 erl_crash.dump
 *.ez
 *.beam
