@@ -19,6 +19,15 @@ config :llm_chat, LlmChatWeb.Endpoint,
     tailwind: {Tailwind, :install_and_run, [:llm_chat, ~w(--watch)]}
   ]
 
+config :llm_chat, LlmChat.Repo,
+  username: "dominiqueboucher",
+  password: "",
+  hostname: "localhost",
+  database: "llm_chat_dev",
+  stacktrace: true,
+  show_sensitive_data_on_connection_error: true,
+  pool_size: 10
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

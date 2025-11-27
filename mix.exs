@@ -36,6 +36,8 @@ defmodule LlmChat.MixProject do
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 1.0"},
+      {:ecto_sql, "~> 3.10"},
+      {:postgrex, ">= 0.0.0"},
       {:floki, ">= 0.38.0"},
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
@@ -61,7 +63,8 @@ defmodule LlmChat.MixProject do
       {:uuid, "~> 1.1"},
       {:ex_aws_bedrock, "~> 2.5.0"},
       {:ollama, "0.9.0"},
-      {:req_llm, "~> 1.0.0"}
+      {:req_llm, "~> 1.0.0"},
+      {:pgvector, "~> 0.3.0"}
     ]
   end
 

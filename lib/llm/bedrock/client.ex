@@ -174,4 +174,27 @@ defmodule Llm.Bedrock.Client do
       service: :"bedrock-runtime"
     }
   end
+
+  def embed_text(text) do
+    data = %{inputText: text}
+
+    Logger.debug("Bedrock embedding request data:\n#{Jason.encode!(data, pretty: true)}")
+
+    %ExAws.Operation.JSON{
+      http_method: :post,
+      headers: [{"Content-Type", "application/json"}],
+      data: data,
+      path: "/model/amazon.titan-embed-text-v1/invoke",
+      service: :"bedrock-runtime"
+    }
+    |> ExAws.request(service_override: :bedrock, region: Bedrock.get_region())
+    |> case do
+      {:ok, response} ->
+        response["embedding"]
+
+      {:error, reason} ->
+        Logger.error("Bedrock embedding failed: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
 end

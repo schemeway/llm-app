@@ -16,6 +16,7 @@ defmodule LlmChat.Application do
       {DynamicSupervisor, name: Agents.Registry, strategy: :one_for_one},
       Tools.ToolRegistry,
       Memory.Store,
+      LlmChat.Repo,
       # Start the Finch HTTP client for sending emails
       {Finch, name: LlmChat.Finch},
       # Start a worker by calling: LlmChat.Worker.start_link(arg)

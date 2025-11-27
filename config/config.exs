@@ -8,6 +8,7 @@
 import Config
 
 config :llm_chat,
+  ecto_repos: [LlmChat.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Configures the endpoint
@@ -59,6 +60,8 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+config :llm_chat, LlmChat.Repo, types: LlmChat.PostgrexTypes
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
