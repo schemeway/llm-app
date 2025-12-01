@@ -3,7 +3,7 @@ defmodule LlmChat.Repo.Migrations.CreateChunk do
 
   def change do
     create table(:chunks) do
-      add(:text, :string)
+      add(:text, :text)
       add(:embedding, :vector)
     end
   end

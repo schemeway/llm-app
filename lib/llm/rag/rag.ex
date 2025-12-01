@@ -18,13 +18,25 @@ defmodule Llm.Rag do
   end
 
   def query_text(text, limit \\ 5) do
-    query_embedding = Client.embed_text(text)
+    query_embedding = Client.embed_text(text) |> Pgvector.new()
 
     Repo.all(
-      from(c in Chunk,
-        order_by: cosine_distance(c.embedding, ^Pgvector.new(query_embedding)),
+      from(chunk in Chunk,
+        order_by: cosine_distance(chunk.embedding, ^query_embedding),
         limit: ^limit
       )
     )
+  end
+
+  def chunk_text(text, format \\ :plaintext) do
+    TextChunker.split(text, format: format)
+    |> Enum.map(fn chunk ->
+      %Chunk{
+        text: chunk.text,
+        embedding: Client.embed_text(chunk.text)
+      }
+      |> Chunk.changeset(%{})
+      |> Repo.insert()
+    end)
   end
 end

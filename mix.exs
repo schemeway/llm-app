@@ -64,7 +64,8 @@ defmodule LlmChat.MixProject do
       {:ex_aws_bedrock, "~> 2.5.0"},
       {:ollama, "0.9.0"},
       {:req_llm, "~> 1.0.0"},
-      {:pgvector, "~> 0.3.0"}
+      {:pgvector, "~> 0.3.0"},
+      {:text_chunker, "~> 0.5.2"}
     ]
   end
 
