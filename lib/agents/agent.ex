@@ -12,11 +12,6 @@ defmodule Agents.Agent do
     GenServer.start_link(__MODULE__, options, name: {:global, {:agent, agent_name}})
   end
 
-  def stop(agent_name) do
-    Logger.info("Stopping agent: #{agent_name}")
-    GenServer.stop({:global, {:agent, agent_name}})
-  end
-
   def send_message(agent_name, message) do
     GenServer.call({:global, {:agent, agent_name}}, {:send_message, message}, :infinity)
   end
@@ -72,21 +67,29 @@ end
 
 defmodule Agents.UserInput do
   def handle_message(_config, message) do
-    IO.puts(message)
-    IO.gets("> ")
+    task =
+      Task.async(fn ->
+        IO.puts(message)
+        IO.gets("> ")
+      end)
+
+    Task.await(task, :infinity)
   end
 end
 
 defmodule Agents.Test do
+  import Agents.Registry, only: [start_link: 1]
+  alias Agents.Agent
+
   def setup do
     {:ok, _} =
-      Agents.Agent.start_link(
+      Agent.start_link(
         name: "user_input",
         module: Agents.UserInput
       )
 
     {:ok, _} =
-      Agents.Agent.start_link(
+      start_link(
         name: "code_assistant",
         system_prompt: """
         You are an expert coding assistant.
@@ -98,7 +101,7 @@ defmodule Agents.Test do
       )
 
     {:ok, _} =
-      Agents.Agent.start_link(
+      start_link(
         name: "financial_advisor",
         system_prompt: """
         You are a financial advisor bot. You can answer questions about finances, currencies, etc.
@@ -108,10 +111,10 @@ defmodule Agents.Test do
       )
 
     {:ok, _} =
-      Agents.Agent.start_link(
+      start_link(
         name: "orchestrator",
         system_prompt: """
-        You are an orchestration agent, you dispatch requests to other agents. That is your only purpose. Do not try to answer the question yourself. Let the other agent clarify any information. 
+        You are an orchestration agent, you dispatch requests to other agents. That is your only purpose. Do not try to answer the question yourself. Let the other agent clarify any information.
 
         You must first decide to which agent you need to dispatch the message to. You do so by determining the category of the user's question.
 
@@ -123,5 +126,16 @@ defmodule Agents.Test do
         #        model: "anthropic.claude-3-haiku-20240307-v1:0",
         tools: ["AgentCall"]
       )
+  end
+
+  def run do
+    setup()
+    loop()
+  end
+
+  def loop do
+    message = Agent.send_message("user_input", "What can I do for you?")
+    Agent.send_message("orchestrator", message) |> IO.puts()
+    loop()
   end
 end
