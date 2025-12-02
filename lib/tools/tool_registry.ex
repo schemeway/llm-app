@@ -21,6 +21,7 @@ defmodule Tools.ToolRegistry do
       Tools.Dir.DirChanger,
       Tools.File.FileReader,
       Tools.File.FileWriter,
+      Tools.Rag,
       Tools.WebScraper,
       Tools.Memory.GetKey,
       Tools.Memory.PutKey,

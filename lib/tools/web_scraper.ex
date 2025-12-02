@@ -1,9 +1,9 @@
 defmodule Tools.WebScraper do
-
   require Logger
 
   use Tools.Tool,
-    description: "A tool for scraping web content from a given URL. Returns the HTML content and can optionally extract text content.",
+    description:
+      "A tool for scraping web content from a given URL. Returns the HTML content and can optionally extract text content.",
     parameters: %{
       "url" => %{
         "type" => "string",
@@ -33,6 +33,7 @@ defmodule Tools.WebScraper do
 
             {:error, reason} ->
               Logger.error("Failed to extract text from HTML: #{reason}")
+
               %{
                 "url" => url,
                 "html_content" => html_content,
@@ -50,6 +51,7 @@ defmodule Tools.WebScraper do
 
       {:error, reason} ->
         Logger.error("Failed to scrape URL #{url}: #{reason}")
+
         %{
           "url" => url,
           "error" => "Failed to scrape URL: #{reason}",
@@ -60,12 +62,12 @@ defmodule Tools.WebScraper do
 
   defp make_request(url) do
     case Req.get(url,
-      headers: [
-        {"User-Agent", "Mozilla/5.0 (compatible; ElixirWebScraper/1.0)"}
-      ],
-      max_redirects: 5,
-      receive_timeout: 30_000
-    ) do
+           headers: [
+             {"User-Agent", "Mozilla/5.0 (compatible; ElixirWebScraper/1.0)"}
+           ],
+           max_redirects: 5,
+           receive_timeout: 30_000
+         ) do
       {:ok, %{status: 200, body: body}} ->
         {:ok, body}
 
@@ -77,19 +79,25 @@ defmodule Tools.WebScraper do
     end
   end
 
-  defp extract_text_content(html) do
+  def extract_text_content(html) do
     try do
-      text_content =
-        html
-        |> Floki.parse_document!()
+      {:ok, document} = Floki.parse_document(html)
+
+      text =
+        document
         |> Floki.find("body")
-        |> Floki.text()
+        |> Floki.filter_out("script")
+        |> Floki.filter_out("style")
+        |> Floki.filter_out("button")
+        |> Floki.filter_out("a")
+        |> Floki.filter_out("svg")
+        |> Floki.text(sep: " ")
+        |> String.replace(~r/\s+/, " ")
         |> String.trim()
 
-      {:ok, text_content}
+      {:ok, text}
     rescue
-      error ->
-        {:error, inspect(error)}
+      error -> {:error, inspect(error)}
     end
   end
 end

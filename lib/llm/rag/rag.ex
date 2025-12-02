@@ -1,4 +1,6 @@
 defmodule Llm.Rag do
+  require Logger
+
   alias Llm.Rag.Chunk
   alias Llm.Bedrock.Client
   alias LlmChat.Repo
@@ -38,5 +40,26 @@ defmodule Llm.Rag do
       |> Chunk.changeset(%{})
       |> Repo.insert()
     end)
+  end
+
+  def clean() do
+    Repo.delete_all(Chunk)
+  end
+
+  def count_documents() do
+    Repo.aggregate(Chunk, :count, :id)
+  end
+
+  def ingest_document(file_path) do
+    Logger.debug("Ingesting document: #{file_path}")
+
+    with {:ok, content} <- File.read(file_path),
+         {:ok, text} <- Tools.WebScraper.extract_text_content(content) do
+      chunk_text(text)
+    end
+  end
+
+  def ingest_documents(file_paths) do
+    Enum.map(file_paths, &ingest_document/1)
   end
 end
