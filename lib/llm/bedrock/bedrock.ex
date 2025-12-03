@@ -1,5 +1,5 @@
 defmodule Llm.Bedrock do
-  alias Llm.BedrockClient
+  alias Llm.Bedrock.Client
   alias Llm.Model
   use GenServer
 
@@ -16,7 +16,11 @@ defmodule Llm.Bedrock do
   end
 
   def get_default_model_id do
-    Application.get_env(:llm_chat, :default_bedrock_model, "anthropic-claude-haiku-4-5-20251001-v1:0")
+    Application.get_env(
+      :llm_chat,
+      :default_bedrock_model,
+      "anthropic-claude-haiku-4-5-20251001-v1:0"
+    )
   end
 
   def start_link(_) do
@@ -25,6 +29,10 @@ defmodule Llm.Bedrock do
 
   def invoke(callerid, model, system_prompt, tools, messages) do
     GenServer.cast(__MODULE__, {:invoke, callerid, model, system_prompt, tools, messages})
+  end
+
+  def embed_text(text) do
+    Client.embed_text(text)
   end
 
   @impl true
@@ -40,9 +48,7 @@ defmodule Llm.Bedrock do
 
   @impl true
   def handle_cast({:invoke, callerid, model, system_prompt, tools, messages}, state) do
-    spawn_link(fn ->
-      BedrockClient.invoke(callerid, model, system_prompt, tools, messages)  # Log the invocation
-    end)
+    spawn_link(fn -> Client.invoke(callerid, model, system_prompt, tools, messages) end)
 
     {:noreply, state}
   end
@@ -54,7 +60,6 @@ defmodule Llm.Bedrock do
   end
 
   defp retrieve_models() do
-
     on_demand_models() ++ inference_profile_models()
   end
 
@@ -65,10 +70,13 @@ defmodule Llm.Bedrock do
 
     case response do
       {:ok, %{"modelSummaries" => models}} ->
-        for %{"modelId" => id, "modelName" => name, "inferenceTypesSupported" => inference_types} <- models, "ON_DEMAND" in inference_types do
+        for %{"modelId" => id, "modelName" => name, "inferenceTypesSupported" => inference_types} <-
+              models,
+            "ON_DEMAND" in inference_types do
           Logger.info("Found Bedrock model: #{name} (ID: #{id})")
           %Model{name: name, id: id, rate: 2}
         end
+
       _ ->
         Logger.error("Erreur lors de la récupération des modèles Bedrock: #{inspect(response)}")
         []
@@ -86,10 +94,13 @@ defmodule Llm.Bedrock do
           Logger.info("Found Bedrock inference profile: #{name} (Model ID: #{id})")
           %Model{name: name, id: id, rate: 125}
         end
+
       _ ->
-        Logger.error("Erreur lors de la récupération des profils d'inférence Bedrock: #{inspect(response)}")
+        Logger.error(
+          "Erreur lors de la récupération des profils d'inférence Bedrock: #{inspect(response)}"
+        )
+
         []
     end
   end
-
 end

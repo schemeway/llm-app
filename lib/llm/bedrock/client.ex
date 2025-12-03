@@ -159,7 +159,7 @@ defmodule Llm.Bedrock.Client do
       }
       |> Map.merge(if system_prompt, do: %{system: [%{text: system_prompt}]}, else: %{})
       |> Map.merge(
-        if tools,
+        if is_list(tools) and not (tools == []),
           do: %{toolConfig: %{tools: tools |> Enum.map(&Tool.build_tool_spec/1)}},
           else: %{}
       )

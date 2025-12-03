@@ -2,14 +2,14 @@ defmodule Llm.Rag do
   require Logger
 
   alias Llm.Rag.Chunk
-  alias Llm.Bedrock.Client
+  alias Llm.PlatformRegistry
   alias LlmChat.Repo
 
   import Ecto.Query
   import Pgvector.Ecto.Query
 
   def store_text(text) do
-    embedding = Client.embed_text(text)
+    embedding = embed_text(text)
 
     %Chunk{
       text: text,
@@ -20,7 +20,7 @@ defmodule Llm.Rag do
   end
 
   def query_text(text, limit \\ 5) do
-    query_embedding = Client.embed_text(text) |> Pgvector.new()
+    query_embedding = embed_text(text) |> Pgvector.new()
 
     Repo.all(
       from(chunk in Chunk,
@@ -35,7 +35,7 @@ defmodule Llm.Rag do
     |> Enum.map(fn chunk ->
       %Chunk{
         text: chunk.text,
-        embedding: Client.embed_text(chunk.text)
+        embedding: embed_text(chunk.text)
       }
       |> Chunk.changeset(%{})
       |> Repo.insert()
@@ -61,5 +61,9 @@ defmodule Llm.Rag do
 
   def ingest_documents(file_paths) do
     Enum.map(file_paths, &ingest_document/1)
+  end
+
+  defp embed_text(text) do
+    PlatformRegistry.default_platform().embed_text(text)
   end
 end

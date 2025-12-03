@@ -70,35 +70,47 @@ defmodule Llm.Ollama.Client do
   defp invoke_ollama(context) do
     Logger.debug("Invoking Ollama with model: #{context.model_id}")
 
-    converse(context.client, context.model_id, context.messages, context.system_prompt, context.tools)
+    converse(
+      context.client,
+      context.model_id,
+      context.messages,
+      context.system_prompt,
+      context.tools
+    )
   end
 
-  defp process_response(%{
-          "message" => %{
-            "content" => content,
-            "tool_calls" => tool_calls
-          } = message
-        },
-        context
-      ) do
+  defp process_response(
+         %{
+           "message" =>
+             %{
+               "content" => content,
+               "tool_calls" => tool_calls
+             } = message
+         },
+         context
+       ) do
     if context.process_tool_use do
       Logger.debug("Tool use: #{inspect(tool_calls)}")
-      context = Context.add_message(context, %{
-        role: message["role"],
-        content: message["content"],
-        tool_calls: message["tool_calls"]
-      })
+
+      context =
+        Context.add_message(context, %{
+          role: message["role"],
+          content: message["content"],
+          tool_calls: message["tool_calls"]
+        })
+
       process_tool_use(tool_calls, context)
     else
       content
     end
   end
 
-  defp process_response(%{
-          "message" => %{
-            "content" => text,
-            "role" => "assistant"
-          }
+  defp process_response(
+         %{
+           "message" => %{
+             "content" => text,
+             "role" => "assistant"
+           }
          },
          context
        ) do
@@ -140,10 +152,12 @@ defmodule Llm.Ollama.Client do
     tool = Enum.find(context.tools, fn tool -> tool.name() == tool_name end)
 
     Logger.debug("Running tool #{tool_name} with input: #{inspect(input)}")
+
     case tool.call(input) do
       %{"result" => result} ->
         Logger.debug("Tool #{tool_name} returned result: #{inspect(result)}")
         %{"role" => "tool", "content" => "#{result}"}
+
       %{"error" => error} ->
         %{"role" => "tool", "content" => "Error: #{error}"}
     end
@@ -174,4 +188,10 @@ defmodule Llm.Ollama.Client do
     }
   end
 
+  def embed_text(client, text) do
+    {:ok, %{"embeddings" => [embedding]}} =
+      Ollama.embed(client, input: text, model: "snowflake-arctic-embed:latest")
+
+    embedding
+  end
 end
