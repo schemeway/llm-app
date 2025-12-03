@@ -3,42 +3,12 @@ defmodule Llm.Bedrock.Client do
 
   alias Llm.{Bedrock, Context, Message}
   alias Tools.Tool
-
-  defp notify_consumption(caller_pid, response) do
-    case response do
-      %{"usage" => %{"inputTokens" => input_tokes, "outputTokens" => output_tokens}} ->
-        send(caller_pid, {:tokens_used, input_tokes, output_tokens})
-    end
-  end
-
-  defp notify_thoughts(caller_pid, thought) do
-    send(caller_pid, {:llm_tool_use_only, %{"role" => "thought", "content" => thought}})
-  end
-
-  defp notify_tool_use(caller_pid, tool_use) do
-    send(caller_pid, {:llm_tool_use_only, %{"role" => "tool", "content" => tool_use}})
-  end
-
-  defp notify_answer(caller_pid, message) do
-    send(caller_pid, {:llm_response, %{"role" => "assistant", "content" => message}})
-  end
+  import Llm.Notification
 
   def invoke(caller_pid, model, system_prompt, tools, messages) do
-    create_context(caller_pid, model, system_prompt, tools)
+    Context.create_context(nil, caller_pid, model, system_prompt, tools)
     |> add_messages(messages)
     |> send_request()
-  end
-
-  defp create_context(caller_pid, model, system_prompt, tools) do
-    selected_tools =
-      Tools.ToolRegistry.get_all_tools()
-      |> Enum.filter(fn tool -> tool.name() in tools end)
-
-    Context.new(model, system_prompt,
-      caller_pid: caller_pid,
-      tools: selected_tools,
-      process_tools?: true
-    )
   end
 
   defp add_messages(context, []), do: context
@@ -50,7 +20,9 @@ defmodule Llm.Bedrock.Client do
   end
 
   defp add_messages(context, [%{"role" => "assistant", "content" => message} | messages]) do
-    context |> Context.add_message(Message.assistant(message)) |> add_messages(messages)
+    context
+    |> Context.add_message(Message.assistant(message))
+    |> add_messages(messages)
   end
 
   defp add_messages(context, [_ | messages]) do
@@ -176,25 +148,27 @@ defmodule Llm.Bedrock.Client do
   end
 
   def embed_text(text) do
-    data = %{inputText: text}
+    response =
+      embed_operation(text)
+      |> ExAws.request(service_override: :bedrock, region: Bedrock.get_region())
 
-    Logger.debug("Bedrock embedding request data:\n#{Jason.encode!(data, pretty: true)}")
-
-    %ExAws.Operation.JSON{
-      http_method: :post,
-      headers: [{"Content-Type", "application/json"}],
-      data: data,
-      path: "/model/amazon.titan-embed-text-v1/invoke",
-      service: :"bedrock-runtime"
-    }
-    |> ExAws.request(service_override: :bedrock, region: Bedrock.get_region())
-    |> case do
-      {:ok, response} ->
-        response["embedding"]
+    case response do
+      {:ok, content} ->
+        content["embedding"]
 
       {:error, reason} ->
         Logger.error("Bedrock embedding failed: #{inspect(reason)}")
         {:error, reason}
     end
+  end
+
+  defp embed_operation(text) do
+    %ExAws.Operation.JSON{
+      http_method: :post,
+      headers: [{"Content-Type", "application/json"}],
+      data: %{inputText: text},
+      path: "/model/amazon.titan-embed-text-v1/invoke",
+      service: :"bedrock-runtime"
+    }
   end
 end
