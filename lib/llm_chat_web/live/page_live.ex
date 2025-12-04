@@ -170,7 +170,9 @@ defmodule LlmChatWeb.PageLive do
       Logger.debug("System Prompt: #{system_prompt}")
 
       platform = socket.assigns.platform
+
       platform.invoke(
+        socket.assigns.id,
         self(),
         socket.assigns.model_id,
         system_prompt,
@@ -227,7 +229,12 @@ defmodule LlmChatWeb.PageLive do
 
     socket =
       assign(socket,
-        history: History.save_conversation(socket.assigns.history, socket.assigns.id, socket.assigns.events)
+        history:
+          History.save_conversation(
+            socket.assigns.history,
+            socket.assigns.id,
+            socket.assigns.events
+          )
       )
 
     {:noreply, socket}

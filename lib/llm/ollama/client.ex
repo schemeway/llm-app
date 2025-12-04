@@ -4,10 +4,10 @@ defmodule Llm.Ollama.Client do
   alias Llm.Context
   import Llm.Notification
 
-  def invoke(client, caller_pid, model, system_prompt, tools, messages) do
-    Context.create_context(client, caller_pid, model, system_prompt, tools)
+  def invoke(client, context_id, caller_pid, model, system_prompt, tools, messages) do
+    Context.create_context(context_id, caller_pid, model, system_prompt, tools)
     |> add_messages(messages)
-    |> send_request()
+    |> send_request(client)
   end
 
   defp add_messages(context, []), do: context
@@ -30,13 +30,13 @@ defmodule Llm.Ollama.Client do
     |> add_messages(messages)
   end
 
-  defp send_request(context) do
+  defp send_request(context, client) do
     Logger.debug(context.messages)
 
-    case invoke_ollama(context) do
+    case invoke_ollama(context, client) do
       {:ok, response} ->
         Logger.debug("Ollama response: #{inspect(response)}")
-        process_response(response, context)
+        process_response(response, context, client)
 
       {:error, reason} ->
         Logger.error("Ollama invocation failed: #{inspect(reason)}")
@@ -44,11 +44,11 @@ defmodule Llm.Ollama.Client do
     end
   end
 
-  defp invoke_ollama(context) do
+  defp invoke_ollama(context, client) do
     Logger.debug("Invoking Ollama with model: #{context.model_id}")
 
     converse(
-      context.client,
+      client,
       context.model_id,
       context.messages,
       context.system_prompt,
@@ -64,7 +64,8 @@ defmodule Llm.Ollama.Client do
                "tool_calls" => tool_calls
              } = message
          },
-         context
+         context,
+         client
        ) do
     if context.process_tool_use do
       Logger.debug("Tool use: #{inspect(tool_calls)}")
@@ -76,7 +77,7 @@ defmodule Llm.Ollama.Client do
           tool_calls: message["tool_calls"]
         })
 
-      process_tool_use(tool_calls, context)
+      process_tool_use(tool_calls, context, client)
     else
       content
     end
@@ -89,22 +90,23 @@ defmodule Llm.Ollama.Client do
              "role" => "assistant"
            }
          },
-         context
+         context,
+         _client
        ) do
     notify_answer(context.caller_pid, text)
     :ok
   end
 
-  defp process_tool_use([], context) do
-    send_request(context)
+  defp process_tool_use([], context, client) do
+    send_request(context, client)
   end
 
-  defp process_tool_use([%{"text" => text} | rest], context) do
+  defp process_tool_use([%{"text" => text} | rest], context, client) do
     notify_thoughts(context.caller_pid, %{text: text})
-    process_tool_use(rest, context)
+    process_tool_use(rest, context, client)
   end
 
-  defp process_tool_use([%{"function" => tool_use} | rest], context) do
+  defp process_tool_use([%{"function" => tool_use} | rest], context, client) do
     result = run_tool(context, tool_use)
 
     notify_thoughts(context.caller_pid, %{
@@ -116,13 +118,13 @@ defmodule Llm.Ollama.Client do
     notify_tool_use(context.caller_pid, result["content"])
 
     context = Context.add_message(context, %{role: result["role"], content: result["content"]})
-    process_tool_use(rest, context)
+    process_tool_use(rest, context, client)
   end
 
-  defp process_tool_use([unknown | rest], context) do
+  defp process_tool_use([unknown | rest], context, client) do
     Logger.warning("Unknown tool call: #{inspect(unknown)}")
     # Ignore unknown tool calls
-    process_tool_use(rest, context)
+    process_tool_use(rest, context, client)
   end
 
   defp run_tool(context, %{"name" => tool_name, "arguments" => input}) do

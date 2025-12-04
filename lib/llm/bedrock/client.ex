@@ -5,8 +5,8 @@ defmodule Llm.Bedrock.Client do
   alias Tools.Tool
   import Llm.Notification
 
-  def invoke(caller_pid, model, system_prompt, tools, messages) do
-    Context.create_context(nil, caller_pid, model, system_prompt, tools)
+  def invoke(context_id, caller_pid, model, system_prompt, tools, messages) do
+    Context.create_context(context_id, caller_pid, model, system_prompt, tools)
     |> add_messages(messages)
     |> send_request()
   end

@@ -27,8 +27,11 @@ defmodule Llm.Bedrock do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
-  def invoke(callerid, model, system_prompt, tools, messages) do
-    GenServer.cast(__MODULE__, {:invoke, callerid, model, system_prompt, tools, messages})
+  def invoke(context_id, callerid, model, system_prompt, tools, messages) do
+    GenServer.cast(
+      __MODULE__,
+      {:invoke, context_id, callerid, model, system_prompt, tools, messages}
+    )
   end
 
   def embed_text(text) do
@@ -47,8 +50,10 @@ defmodule Llm.Bedrock do
   end
 
   @impl true
-  def handle_cast({:invoke, callerid, model, system_prompt, tools, messages}, state) do
-    spawn_link(fn -> Client.invoke(callerid, model, system_prompt, tools, messages) end)
+  def handle_cast({:invoke, context_id, callerid, model, system_prompt, tools, messages}, state) do
+    spawn_link(fn ->
+      Client.invoke(context_id, callerid, model, system_prompt, tools, messages)
+    end)
 
     {:noreply, state}
   end
