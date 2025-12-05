@@ -5,8 +5,8 @@ defmodule Llm.Bedrock.Client do
   alias Tools.Tool
   import Llm.Notification
 
-  def invoke(context_id, caller_pid, model, system_prompt, tools, messages) do
-    Context.create_context(context_id, caller_pid, model, system_prompt, tools)
+  def invoke(context_id, model, system_prompt, tools, messages) do
+    Context.create_context(context_id, model, system_prompt, tools)
     |> add_messages(messages)
     |> send_request()
   end
@@ -35,7 +35,7 @@ defmodule Llm.Bedrock.Client do
 
     case invoke_bedrock(context) do
       {:ok, response} ->
-        notify_consumption(context.caller_pid, response)
+        notify_consumption(context.id, response)
         process_response(response, context)
 
       {:error, {:http_error, 429, _}} ->
@@ -45,7 +45,7 @@ defmodule Llm.Bedrock.Client do
 
       {:error, reason} ->
         Logger.error("Bedrock invocation failed: #{inspect(reason)}")
-        send(context.caller_pid, {:bedrock_error, reason})
+        notify_error(context.id, reason)
     end
   end
 
@@ -63,7 +63,7 @@ defmodule Llm.Bedrock.Client do
          },
          context
        ) do
-    notify_answer(context.caller_pid, text)
+    notify_answer(context.id, text)
     :ok
   end
 
@@ -90,20 +90,20 @@ defmodule Llm.Bedrock.Client do
   end
 
   defp process_tool_use([%{"text" => text} | rest], context, tool_results) do
-    notify_thoughts(context.caller_pid, %{"text" => text})
+    notify_thoughts(context.id, %{"text" => text})
     process_tool_use(rest, context, tool_results)
   end
 
   defp process_tool_use([%{"toolUse" => %{}} = tool_use | rest], context, tool_results) do
     result = run_tool(context, tool_use)
 
-    notify_thoughts(context.caller_pid, %{
+    notify_thoughts(context.id, %{
       "text" => false,
       "name" => tool_use["toolUse"]["name"],
       "input" => Jason.encode!(tool_use["toolUse"]["input"])
     })
 
-    notify_tool_use(context.caller_pid, result)
+    notify_tool_use(context.id, result)
 
     process_tool_use(rest, context, tool_results ++ [result])
   end

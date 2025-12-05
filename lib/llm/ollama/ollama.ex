@@ -20,10 +20,10 @@ defmodule Llm.Ollama do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
-  def invoke(context_id, callerid, model, system_prompt, tools, messages) do
+  def invoke(context_id, model, system_prompt, tools, messages) do
     GenServer.cast(
       __MODULE__,
-      {:invoke, context_id, callerid, model, system_prompt, tools, messages}
+      {:invoke, context_id, model, system_prompt, tools, messages}
     )
   end
 
@@ -50,12 +50,12 @@ defmodule Llm.Ollama do
 
   @impl true
   def handle_cast(
-        {:invoke, context_id, callerid, model, system_prompt, tools, messages},
+        {:invoke, context_id, model, system_prompt, tools, messages},
         %{client: client} = state
       ) do
     spawn_link(fn ->
       # Log the invocation
-      Client.invoke(client, context_id, callerid, model, system_prompt, tools, messages)
+      Client.invoke(client, context_id, model, system_prompt, tools, messages)
     end)
 
     {:noreply, state}

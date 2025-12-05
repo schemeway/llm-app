@@ -4,10 +4,9 @@ defmodule Llm.Context do
             messages: [],
             tools: [],
             process_tool_use: true,
-            caller_pid: nil,
             system_prompt: nil
 
-  def create_context(context_id, caller_pid, model, system_prompt, tools) do
+  def create_context(context_id, model, system_prompt, tools) do
     selected_tools =
       Tools.ToolRegistry.get_all_tools()
       |> Enum.filter(fn tool -> tool.name() in tools end)
@@ -17,7 +16,6 @@ defmodule Llm.Context do
       model_id: model,
       messages: [],
       tools: selected_tools,
-      caller_pid: caller_pid,
       process_tool_use: true,
       system_prompt: system_prompt
     }

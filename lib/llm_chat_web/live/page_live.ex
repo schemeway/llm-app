@@ -5,6 +5,7 @@ defmodule LlmChatWeb.PageLive do
   import LlmChatWeb.Component.Toolbar, only: [toolbar: 1]
   import LlmChatWeb.Component.Conversation, only: [conversation: 1]
   import LlmChatWeb.Component.History, only: [history: 1]
+  import Llm.Notification, only: [subscribe: 1, unsubscribe: 1]
   alias Llm.History
   alias Llm.PlatformRegistry
   alias Tools.ToolRegistry
@@ -39,7 +40,8 @@ defmodule LlmChatWeb.PageLive do
         input_tokens: 0,
         output_tokens: 0,
         platform: platform,
-        history: history
+        history: history,
+        id: nil
       )
       |> initialize_conversation()
 
@@ -47,12 +49,24 @@ defmodule LlmChatWeb.PageLive do
   end
 
   defp initialize_conversation(socket) do
+    new_id = generate_conversation_id()
+
+    subscribe_to_notifications(socket.assigns.id, new_id)
+
     assign(socket,
       events: [],
-      id: generate_conversation_id(),
+      id: new_id,
       current_input: "",
       is_loading: false
     )
+  end
+
+  defp subscribe_to_notifications(old_id, new_id) do
+    if old_id do
+      unsubscribe(old_id)
+    end
+
+    subscribe(new_id)
   end
 
   defp generate_conversation_id do
@@ -173,7 +187,6 @@ defmodule LlmChatWeb.PageLive do
 
       platform.invoke(
         socket.assigns.id,
-        self(),
         socket.assigns.model_id,
         system_prompt,
         socket.assigns.tools,
@@ -191,6 +204,7 @@ defmodule LlmChatWeb.PageLive do
 
     case conversation do
       {:ok, messages} ->
+        subscribe_to_notifications(socket.assigns.id, id)
         socket = assign(socket, events: messages, id: id, is_loading: false, current_input: "")
         {:noreply, socket}
 
@@ -241,7 +255,7 @@ defmodule LlmChatWeb.PageLive do
   end
 
   @impl true
-  def handle_info({:tokens_used, input_tokens, output_tokens}, socket) do
+  def handle_info({:llm_consumption, {input_tokens, output_tokens}}, socket) do
     socket =
       assign(socket,
         input_tokens: socket.assigns.input_tokens + input_tokens,
@@ -265,7 +279,20 @@ defmodule LlmChatWeb.PageLive do
   end
 
   @impl true
-  def handle_info({:llm_tool_use_only, response_data}, socket) do
+  def handle_info({:llm_thought, response_data}, socket) do
+    events = socket.assigns.events ++ [response_data]
+
+    socket =
+      assign(socket,
+        events: events,
+        is_loading: false
+      )
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:llm_tool_use, response_data}, socket) do
     events = socket.assigns.events ++ [response_data]
 
     socket =
