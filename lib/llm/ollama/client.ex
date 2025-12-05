@@ -93,7 +93,7 @@ defmodule Llm.Ollama.Client do
          context,
          _client
        ) do
-    notify_answer(context.id, text)
+    notify_answer(context.id, context.model_id, text)
     :ok
   end
 
@@ -102,14 +102,14 @@ defmodule Llm.Ollama.Client do
   end
 
   defp process_tool_use([%{"text" => text} | rest], context, client) do
-    notify_thoughts(context.id, %{text: text})
+    notify_thoughts(context.id, context.model_id, %{text: text})
     process_tool_use(rest, context, client)
   end
 
   defp process_tool_use([%{"function" => tool_use} | rest], context, client) do
     result = run_tool(context, tool_use)
 
-    notify_thoughts(context.id, %{
+    notify_thoughts(context.id, context.model_id, %{
       "text" => false,
       "name" => tool_use["name"],
       "input" => tool_use["arguments"]

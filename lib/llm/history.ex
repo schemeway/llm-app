@@ -1,51 +1,112 @@
 defmodule Llm.History do
+  @moduledoc """
+  Manages conversation history using PostgreSQL storage.
+  Events are stored in a dedicated table with creation time and model ID.
+  """
+
   require Logger
+  import Ecto.Query
 
-  def save_conversation(history, id, messages) do
-    Logger.debug("Saving conversation #{id} with #{length(messages)} messages.")
+  alias LlmChat.Repo
+  alias LlmChat.Conversation
+  alias LlmChat.Event
 
-    dir = get_history_path()
-    File.mkdir_p!(dir)
-    Path.join(dir, "#{id}")
-    |> File.write!(Jason.encode!(messages, pretty: true))
-
-    Map.put(history, id, messages |> get_first_message())
+  @doc """
+  Saves a conversation and its new event to the database.
+  Returns updated history map with conversation id => title.
+  """
+  def update(history, id) do
+    # Ensure conversation exists
+    case Repo.get(Conversation, id) do
+      existing -> Map.put(history, id, existing.title)
+      nil -> history
+    end
   end
 
+  def save_event(conversation_id, message) do
+    if Repo.get(Conversation, conversation_id) == nil do
+      title = get_first_message([message])
+
+      %Conversation{}
+      |> Conversation.changeset(%{id: conversation_id, title: title})
+      |> Repo.insert!()
+    end
+
+    %Event{}
+    |> Event.changeset(%{
+      conversation_id: conversation_id,
+      role: message["role"],
+      content: encode_content(message["content"]),
+      model_id: message["model_id"]
+    })
+    |> Repo.insert!()
+  end
+
+  defp encode_content(content) when is_binary(content), do: content
+  defp encode_content(content), do: Jason.encode!(content)
+
+  @doc """
+  Deletes a conversation and all its events from the database.
+  Returns updated history map without the deleted conversation.
+  """
   def delete_conversation(history, id) do
-    dir = get_history_path()
-    file_path = Path.join(dir, "#{id}")
-    File.rm!(file_path)
+    case Repo.get(Conversation, id) do
+      nil -> :ok
+      conversation -> Repo.delete!(conversation)
+    end
 
     Map.delete(history, id)
   end
 
+  @doc """
+  Loads a conversation's events from the database.
+  Returns {:ok, messages} or {:error, reason}.
+  """
   def load_conversation(id) do
-    dir = get_history_path()
-    file_path = Path.join(dir, "#{id}")
+    case Repo.get(Conversation, id) do
+      nil ->
+        {:error, :not_found}
 
-    case File.read(file_path) do
-      {:ok, content} -> {:ok, Jason.decode!(content)}
-      {:error, reason} -> {:error, reason}
+      _conversation ->
+        events =
+          Event
+          |> where([e], e.conversation_id == ^id)
+          |> order_by([e], asc: e.inserted_at)
+          |> Repo.all()
+          |> Enum.map(&event_to_map/1)
+
+        {:ok, events}
     end
   end
 
+  defp event_to_map(event) do
+    %{
+      "role" => event.role,
+      "content" => decode_content(event.content),
+      "model_id" => event.model_id,
+      "inserted_at" => event.inserted_at
+    }
+  end
+
+  defp decode_content(nil), do: nil
+
+  defp decode_content(content) do
+    case Jason.decode(content) do
+      {:ok, decoded} -> decoded
+      {:error, _} -> content
+    end
+  end
+
+  @doc """
+  Reads all conversations from the database.
+  Returns a map of conversation id => title.
+  """
   def read_history do
-    dir = get_history_path()
-
-    File.ls!(dir)
-    |> Enum.map(&read_description(dir, &1))
+    Conversation
+    |> order_by(desc: :updated_at)
+    |> Repo.all()
+    |> Enum.map(fn conv -> {conv.id, conv.title} end)
     |> Enum.into(Map.new())
-  end
-
-  defp read_description(dir, file_name) do
-      {:ok, content} = File.read(Path.join(dir, file_name))
-      description = get_first_message(Jason.decode!(content))
-      {file_name, description}
-  end
-
-  defp get_history_path() do
-    System.get_env("HOME") <> "/.llm-app/data/history"
   end
 
   defp get_first_message(conversation) do
@@ -55,6 +116,4 @@ defmodule Llm.History do
       _ -> "No user message"
     end
   end
-
-
 end

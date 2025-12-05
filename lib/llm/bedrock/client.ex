@@ -63,7 +63,7 @@ defmodule Llm.Bedrock.Client do
          },
          context
        ) do
-    notify_answer(context.id, text)
+    notify_answer(context.id, context.model_id, text)
     :ok
   end
 
@@ -90,14 +90,14 @@ defmodule Llm.Bedrock.Client do
   end
 
   defp process_tool_use([%{"text" => text} | rest], context, tool_results) do
-    notify_thoughts(context.id, %{"text" => text})
+    notify_thoughts(context.id, context.model_id, %{"text" => text})
     process_tool_use(rest, context, tool_results)
   end
 
   defp process_tool_use([%{"toolUse" => %{}} = tool_use | rest], context, tool_results) do
     result = run_tool(context, tool_use)
 
-    notify_thoughts(context.id, %{
+    notify_thoughts(context.id, context.model_id, %{
       "text" => false,
       "name" => tool_use["toolUse"]["name"],
       "input" => Jason.encode!(tool_use["toolUse"]["input"])

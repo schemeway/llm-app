@@ -164,7 +164,9 @@ defmodule LlmChatWeb.PageLive do
     if trimmed_input == "" or socket.assigns.is_loading do
       {:noreply, socket}
     else
-      new_messages = socket.assigns.events ++ [%{"role" => "user", "content" => trimmed_input}]
+      user_message = %{"role" => "user", "content" => trimmed_input}
+      History.save_event(socket.assigns.id, user_message)
+      new_messages = socket.assigns.events ++ [user_message]
 
       # Mettre à jour l'UI immédiatement avec le message utilisateur
       socket =
@@ -232,6 +234,7 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def handle_info({:llm_response, response_data}, socket) do
+    History.save_event(socket.assigns.id, response_data)
     events = socket.assigns.events ++ [response_data]
 
     socket =
@@ -244,10 +247,9 @@ defmodule LlmChatWeb.PageLive do
     socket =
       assign(socket,
         history:
-          History.save_conversation(
+          History.update(
             socket.assigns.history,
-            socket.assigns.id,
-            socket.assigns.events
+            socket.assigns.id
           )
       )
 
@@ -280,6 +282,7 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def handle_info({:llm_thought, response_data}, socket) do
+    History.save_event(socket.assigns.id, response_data)
     events = socket.assigns.events ++ [response_data]
 
     socket =
@@ -293,6 +296,7 @@ defmodule LlmChatWeb.PageLive do
 
   @impl true
   def handle_info({:llm_tool_use, response_data}, socket) do
+    History.save_event(socket.assigns.id, response_data)
     events = socket.assigns.events ++ [response_data]
 
     socket =
