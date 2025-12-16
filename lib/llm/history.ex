@@ -18,8 +18,8 @@ defmodule Llm.History do
   def update(history, id) do
     # Ensure conversation exists
     case Repo.get(Conversation, id) do
-      existing -> Map.put(history, id, existing.title)
       nil -> history
+      existing -> Map.put(history, id, existing.title)
     end
   end
 
