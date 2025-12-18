@@ -25,7 +25,7 @@ defmodule Llm.History do
 
   def save_event(conversation_id, message) do
     if Repo.get(Conversation, conversation_id) == nil do
-      title = get_first_message([message])
+      title = get_first_message([message]) |> fit_to_sql_string()
 
       %Conversation{}
       |> Conversation.changeset(%{id: conversation_id, title: title})
@@ -114,6 +114,15 @@ defmodule Llm.History do
       [] -> "No messages"
       [%{"role" => "user", "content" => content} | _] -> content
       _ -> "No user message"
+    end
+  end
+
+  defp fit_to_sql_string(title) do
+    if String.length(title) > 250 do
+      {prefix, _} = String.split_at(title, 250)
+      prefix <> "..."
+    else
+      title
     end
   end
 end
